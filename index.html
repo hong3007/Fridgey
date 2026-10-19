@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e8a86">
+<meta name="theme-color" content="#0d1a1a" media="(prefers-color-scheme:dark)">
+<title>Fridgey</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230e8a86'/%3E%3Crect x='16' y='10' width='32' height='44' rx='5' fill='white'/%3E%3Crect x='17' y='31' width='30' height='2.4' fill='%230e8a86'/%3E%3Crect x='20' y='38' width='4' height='10' rx='2' fill='%230f4c4a'/%3E%3Crect x='20' y='17' width='4' height='12' rx='2' fill='%230f4c4a'/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" href="data:image/png;base64,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">
+<link rel="apple-touch-icon" href="data:image/png;base64,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">
+<style>
+:root{--bg:#f4f8f8;--card:#fff;--ink:#12302f;--sub:#5c7776;--line:#dbe7e6;--field:#769594;--main:#0b7571;--main-ink:#fff;--red:#c62828;--orange:#b45f00;--ok:#1f7a4d;--radius:14px;--shadow:0 1px 2px rgba(18,48,47,.07);color-scheme:light dark}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0d1a1a;--card:#152626;--ink:#e6f2f1;--sub:#8fb0ae;--line:#2c4a49;--field:#4f7371;--main:#2bb5b0;--main-ink:#06201f;--red:#ff6b6b;--orange:#ffa94d;--ok:#51cf8f;--shadow:0 0 0 transparent}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 "Gowun Dodum",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:center;gap:12px;padding:12px 16px 8px;padding-top:calc(12px + env(safe-area-inset-top));max-width:560px;margin:0 auto}
+header svg{width:36px;height:36px;flex:none}
+header h1{font-size:22px;font-weight:800;letter-spacing:-.01em;margin:0;flex:1;min-width:0;overflow-wrap:anywhere}
+.gear{background:transparent;color:var(--main);font-size:22px;padding:6px 10px;min-width:44px;border-radius:50%}
+main{padding:0 16px;max-width:560px;margin:0 auto}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:1.5px solid transparent;border-radius:10px;padding:10px 16px;background:var(--main);color:var(--main-ink);font-weight:600;min-height:44px;transition:filter .1s,background-color .1s}
+button:active{filter:brightness(.92)}
+button.ghost{background:transparent;color:var(--main);border-color:var(--main)}
+button.danger{background:transparent;color:var(--red);border-color:var(--line)}
+button.x{border-color:transparent;color:var(--sub)}
+.actions .ghost{color:var(--ink);border-color:var(--field)}
+input,select{width:100%;padding:10px 12px;border:1.5px solid var(--field);border-radius:10px;background:var(--bg);min-height:44px}
+select{appearance:none;-webkit-appearance:none;padding-right:30px;background-image:linear-gradient(45deg,transparent 50%,var(--sub) 50%),linear-gradient(135deg,var(--sub) 50%,transparent 50%);background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%;background-size:5px 5px;background-repeat:no-repeat;text-overflow:ellipsis}
+input[type=checkbox]{padding:0;accent-color:var(--main)}
+input::placeholder{color:var(--sub);opacity:1}
+input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible,a:focus-visible,.item:focus-visible{outline:2px solid var(--main);outline-offset:2px}
+input:focus-visible,select:focus-visible{border-color:var(--main)}
+input.bad{border-color:var(--red);box-shadow:0 0 0 1px var(--red)}
+input.bad:focus-visible{outline-color:var(--red)}
+label{display:block;font-size:14px;font-weight:600;color:var(--sub);margin:14px 0 4px}
+dialog label{margin:10px 0 2px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:12px 0;box-shadow:var(--shadow)}
+.entry{border-color:var(--field)}
+form.card button[type=submit]{min-width:72px}
+.row{display:flex;align-items:center;gap:8px}
+.row>.grow{flex:1;min-width:0}
+.name{font-weight:600;font-size:17px;line-height:1.35;overflow-wrap:anywhere}
+.meta{font-size:13px;color:var(--sub)}
+.badge{flex:none;font-weight:700;font-size:14px;line-height:1.3;padding:3px 10px;border-radius:999px;border:1.5px solid var(--ok);color:var(--ok);white-space:nowrap}
+.badge.red{border-color:var(--red);color:var(--red)}
+.badge.expired{border-color:var(--red);background:var(--red);color:var(--card)}
+.badge.orange{border-color:var(--orange);color:var(--orange)}
+.badge.none{border-color:var(--line);color:var(--sub)}
+.zone h2{font-size:13px;font-weight:700;letter-spacing:.06em;margin:0 0 4px;padding-bottom:8px;border-bottom:2px solid var(--line);color:var(--sub);display:flex;align-items:center;justify-content:space-between}
+.zone h2 span:last-child{min-width:24px;padding:0 8px;border-radius:999px;background:var(--bg);text-align:center;font-size:12px;letter-spacing:0}
+.item{display:flex;align-items:center;gap:8px;min-height:44px;padding:10px 16px;margin:0 -16px;border-top:1px solid var(--line);cursor:pointer;box-shadow:inset 3px 0 0 transparent}
+.item:active{background:var(--bg)}
+.item.red,.item.expired{box-shadow:inset 3px 0 0 var(--red)}
+.item.orange{box-shadow:inset 3px 0 0 var(--orange)}
+.zone h2+.item,.card>.item:first-child{border-top:0}
+.zone>.meta{padding:8px 0 2px}
+.chip{flex:none;padding:8px 12px;min-height:44px;font-size:14px;background:var(--card);color:var(--main);border-color:var(--field);white-space:nowrap}
+.empty{text-align:center;color:var(--sub);padding:32px 16px;line-height:1.6}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border-radius:0;border:0;background:transparent;color:var(--sub);min-height:56px;font-size:16px}
+nav button:focus-visible{outline-offset:-4px}
+nav button.on{color:var(--main);font-weight:800;box-shadow:inset 0 3px 0 var(--main)}
+dialog{border:1px solid var(--line);border-radius:var(--radius);background:var(--card);color:var(--ink);width:min(92vw,440px);max-height:90vh;max-height:90dvh;overflow:auto;padding:20px;box-shadow:0 8px 28px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog h2{margin:0 0 4px;font-size:20px}
+dialog h3{margin:20px 0 8px;font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--sub)}
+dialog details{border-top:1px solid var(--line);padding-top:4px}
+dialog summary{min-height:44px}
+.actions{display:flex;gap:8px;margin-top:20px}
+.actions>*{flex:1}
+.actions>[type=submit]{flex:1.5}
+.actions.stick{position:sticky;bottom:0;background:var(--card);padding:12px 0;z-index:1}
+.msg{margin-top:8px}
+.msg:empty{margin:0}
+.actions+.actions{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.note{font-size:14px;line-height:1.55;color:var(--sub);background:var(--card);border:1px dashed var(--field);border-radius:var(--radius);padding:12px 14px;margin:12px 0}
+dialog .note{background:var(--bg)}
+.note div+div{margin-top:4px}
+.hide{display:none!important}
+.err{font-size:14px;color:var(--red);margin-top:4px}
+.err:empty{display:none}
+#notice{width:calc(100% - 32px);max-width:528px;margin:8px auto;border:1px solid var(--line);border-left:4px solid var(--orange);background:var(--card);color:var(--ink)}
+.meta a{display:inline-block;font-size:14px;line-height:24px;min-height:44px;margin:-12px 0;text-decoration:underline;text-underline-offset:3px}
+@media(prefers-reduced-motion:reduce){button{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#0e8a86"/><rect x="16" y="10" width="32" height="44" rx="5" fill="#fff"/><rect x="17" y="31" width="30" height="2.4" fill="#0e8a86"/><rect x="20" y="38" width="4" height="10" rx="2" fill="#0f4c4a"/><rect x="20" y="17" width="4" height="12" rx="2" fill="#0f4c4a"/></svg>
+  <h1 id="title"></h1>
+  <button class="gear" id="gear" aria-label="설정">⚙︎</button>
+</header>
+<div id="notice" class="note hide" role="alert"></div>
+<main id="app"></main>
+<nav id="nav">
+  <button data-tab="fridge" id="tabFridge"></button>
+  <button data-tab="shop" id="tabShop"></button>
+</nav>
+
+<!-- 재료 수정 -->
+<dialog id="eDlg">
+  <form id="eForm">
+    <h2>수정</h2>
+    <label for="eName" id="eNameL"></label><input id="eName" required maxlength="40" autocomplete="off">
+    <label for="eDate" id="eDateL"></label><input id="eDate" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="예: 261020"><div class="err" id="eErr"></div>
+    <label for="eKind">날짜 종류</label><select id="eKind"></select>
+    <label for="eQty" id="eQtyL"></label><input id="eQty" maxlength="20" autocomplete="off">
+    <label for="eZone">구역</label><select id="eZone"></select>
+    <div class="actions stick"><button type="button" class="ghost" id="eCancel">취소</button><button type="submit">저장</button></div>
+    <div class="actions"><button type="button" class="danger" id="eDel">삭제</button></div>
+  </form>
+</dialog>
+
+<!-- 장보기 → 냉장고 -->
+<dialog id="mDlg">
+  <form id="mForm">
+    <h2>냉장고에 넣기</h2>
+    <label for="mZone">구역</label><select id="mZone"></select>
+    <div id="mRows"></div><div class="err" id="mErr"></div>
+    <div class="actions"><button type="button" class="ghost" id="mCancel">취소</button><button type="submit">넣기</button></div>
+  </form>
+</dialog>
+
+<!-- 설정 -->
+<dialog id="sDlg">
+  <h2>설정</h2>
+  <div id="sBody"></div>
+  <div class="actions stick"><button type="button" id="sClose">닫기</button></div>
+</dialog>
+
+<script>
+// <core>
+// 날짜·상태 계산 + 암호화 코어. 브라우저/Node 공통.
+// 날짜 입력 파싱 → "YYYY-MM-DD" / ""(빈 입력) / null(형식 오류). 261020, 20261020, 26-10-20, 1020(월일) 허용.
+function parseDate(text, kind = "exp", now = new Date()) {
+  const t = String(text ?? "").trim();
+  if (!t) return "";
+  if (!/^[\d.\-\/\s]+$/.test(t)) return null;
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  let y, m, d;
+  const parts = t.split(/[.\-\/\s]+/).filter(Boolean);
+  if (/\D/.test(t) && parts.length >= 2) {
+    if (parts.length === 3) [y, m, d] = parts; else if (parts.length === 2) [m, d] = parts; else return null;
+    y = y === undefined ? undefined : y.length <= 2 ? 2000 + +y : y.length === 4 ? +y : NaN;
+  } else {
+    const s = t.replace(/\D/g, "");
+    if (s.length === 6) [y, m, d] = [2000 + +s.slice(0, 2), s.slice(2, 4), s.slice(4)];
+    else if (s.length === 8) [y, m, d] = [+s.slice(0, 4), s.slice(4, 6), s.slice(6)];
+    else if (s.length === 4) [m, d] = [s.slice(0, 2), s.slice(2)];
+    else return null;
+  }
+  m = +m; d = +d;
+  const mk = yy => Date.UTC(yy, m - 1, d);
+  const valid = yy => { const dt = new Date(mk(yy)); return dt.getUTCFullYear() === yy && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d; };
+  if (y === undefined) {
+    // 월일만 입력: 유통기한은 오늘 이후 첫 유효일(지났으면 내년…), 요리일은 오늘 이전 가장 가까운 유효일. 윤일(0229)을 위해 최대 8년 탐색
+    const cook = kind === "cook";
+    for (let i = 0; i <= 8 && y === undefined; i++) {
+      const yy = now.getFullYear() + (cook ? -i : i);
+      if (valid(yy) && (cook ? mk(yy) <= today : mk(yy) >= today)) y = yy;
+    }
+    if (y === undefined) return null;
+  }
+  if (!(y >= 2000 && y <= 2099) || !valid(y)) return null;
+  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
+// 날짜까지 남은 일수(오늘=0, 지남=음수). 날짜 없으면 null.
+function daysLeft(date, now = new Date()) {
+  if (!date) return null;
+  const [y, m, d] = date.split("-").map(Number);
+  return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())) / 864e5);
+}
+
+// 표시 문구·단계(level)·정렬키(key, 작을수록 급함). kind: "exp"=유통기한, "cook"=요리일(4일 지나면 위험).
+function status(it, now = new Date()) {
+  const n = daysLeft(it.date, now);
+  if (n === null) return { label: "", level: "none", key: 1e9 };
+  if (it.kind === "cook") {
+    const e = Math.max(0, -n);
+    return { label: e === 0 ? "오늘 요리" : `${e}일 경과`, level: e >= 4 ? "red" : e >= 3 ? "orange" : "ok", key: 4 - e };
+  }
+  return { label: n < 0 ? `${-n}일 지남` : n === 0 ? "오늘까지" : `D-${n}`, level: n < 0 ? "expired" : n <= 3 ? "red" : n <= 7 ? "orange" : "ok", key: n };
+}
+const byUrgency = (a, b) => status(a).key - status(b).key || a.name.localeCompare(b.name, "ko");
+const fmtDate = d => d ? d.slice(2).replace(/-/g, "") : "";   // 2026-10-20 → 261020
+
+// 공유용 암호화(WebCrypto). 키는 코드에 없고 사용자 폰에서 새로 만든다. 서버에는 암호문만 간다.
+const bytesToB64u = b => { let s = ""; for (const v of new Uint8Array(b)) s += String.fromCharCode(v); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); };
+const b64uToBytes = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
+const newKey = () => bytesToB64u(crypto.getRandomValues(new Uint8Array(32)));
+async function derive(key) {   // 키 → roomId(서버 주소, 키와 무관해 보이는 값) + aes(암호화 열쇠)
+  const raw = b64uToBytes(key);
+  if (raw.length !== 32) throw new Error("bad key");
+  const base = await crypto.subtle.importKey("raw", raw, "HKDF", false, ["deriveBits", "deriveKey"]);
+  const p = info => ({ name: "HKDF", hash: "SHA-256", salt: new Uint8Array(0), info: new TextEncoder().encode(info) });
+  const roomId = [...new Uint8Array(await crypto.subtle.deriveBits(p("fridgey/room"), base, 256))].map(v => v.toString(16).padStart(2, "0")).join("");
+  const aes = await crypto.subtle.deriveKey(p("fridgey/aes"), base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+  return { roomId, aes };
+}
+async function encrypt(aes, obj) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, aes, new TextEncoder().encode(JSON.stringify(obj))));
+  const out = new Uint8Array(12 + ct.length); out.set(iv); out.set(ct, 12);
+  return bytesToB64u(out);
+}
+async function decrypt(aes, str) {   // 키가 틀리거나 내용이 바뀌었으면 던진다 = '키가 맞는지' 검사
+  const b = b64uToBytes(str);
+  return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: b.slice(0, 12) }, aes, b.slice(12))));
+}
+const keyFileText = key => JSON.stringify({ app: "fridgey", v: 1, key }, null, 2);
+function parseKeyFile(text) {
+  let o; try { o = JSON.parse(text); } catch { throw new Error("키 파일이 아닙니다"); }
+  if (!o || o.app !== "fridgey" || o.v !== 1 || typeof o.key !== "string") throw new Error("Fridgey 키 파일이 아닙니다");
+  let n = 0; try { n = b64uToBytes(o.key).length; } catch {}
+  if (n !== 32) throw new Error("키 형식이 올바르지 않습니다");
+  return o.key;
+}
+// </core>
+
+// ---- 데이터 ----
+const DEFAULT_LABELS = { title: "Fridgey", tabFridge: "냉장고", tabShop: "장보기", fName: "음식명", fDate: "유통기한", fCook: "요리일", fQty: "수량", addBtn: "추가" };
+const LABEL_HELP = { title: "앱 이름", tabFridge: "첫 번째 탭 이름", tabShop: "두 번째 탭 이름", fName: "음식 입력칸 이름", fDate: "유통기한 입력칸 이름", fCook: "요리일 입력칸 이름", fQty: "수량 입력칸 이름", addBtn: "추가 버튼 이름" };
+const DEFAULT_ZONES = ["1층", "2층", "3층"];
+const LS = "fridgey.data";
+const store = {
+  get: k => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); return true; } catch { return false; } },
+};
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const qty = v => String(v ?? "").trim().slice(0, 20) || "1";
+const MAX_ZONES = 20, MAX_ROWS = 300;   // 재료·장보기 각각. 한글 40자 이름이 꽉 차도 암호문이 서버 한도(256KB, supabase.sql)를 넘지 않는 크기
+
+function normalize(d) {
+  const o = { labels: {}, zones: [], items: [], shop: [] };
+  d = d && typeof d === "object" ? d : {};
+  for (const k in DEFAULT_LABELS) if (typeof d.labels?.[k] === "string") o.labels[k] = d.labels[k].slice(0, 20);
+  for (const z of Array.isArray(d.zones) ? d.zones : []) if (z && z.id && typeof z.name === "string" && o.zones.length < MAX_ZONES && !o.zones.some(x => x.id === String(z.id))) o.zones.push({ id: String(z.id), name: z.name.slice(0, 20) });
+  if (!o.zones.length) o.zones = DEFAULT_ZONES.map((name, i) => ({ id: "z" + (i + 1), name }));
+  for (const i of Array.isArray(d.items) ? d.items : []) {
+    if (!i || typeof i.name !== "string" || !i.name.trim() || o.items.length >= MAX_ROWS) continue;
+    o.items.push({ id: String(i.id || uid()), name: i.name.slice(0, 40), qty: qty(i.qty),
+      zone: o.zones.some(z => z.id === String(i.zone)) ? String(i.zone) : o.zones[0].id,
+      date: typeof i.date === "string" && parseDate(i.date) === i.date ? i.date : "", kind: i.kind === "cook" ? "cook" : "exp" });
+  }
+  for (const s of Array.isArray(d.shop) ? d.shop : []) {
+    if (!s || typeof s.name !== "string" || !s.name.trim() || o.shop.length >= MAX_ROWS) continue;
+    o.shop.push({ id: String(s.id || uid()), name: s.name.slice(0, 40), qty: qty(s.qty), done: !!s.done });
+  }
+  return o;
+}
+
+const $ = id => document.getElementById(id);
+const showNotice = msg => { $("notice").textContent = msg; $("notice").classList.remove("hide"); };
+const rawData = store.get(LS);
+let data;
+try { data = normalize(JSON.parse(rawData)); } catch { data = normalize(null); if (rawData) { store.set("fridgey.corrupt", rawData); showNotice("저장된 데이터를 읽지 못해 새로 시작했어요. 원본은 이 기기에 따로 남겨 뒀어요."); } }
+let pref = {}; try { pref = JSON.parse(store.get("fridgey.pref")) || {}; } catch {}
+let tab = "fridge", kind = pref.kind === "cook" ? "cook" : "exp", zoneId = data.zones.some(z => z.id === pref.zone) ? pref.zone : data.zones[0].id, editing = null;
+const savePref = () => store.set("fridgey.pref", JSON.stringify({ zone: zoneId, kind }));
+const reveal = el => setTimeout(() => el.scrollIntoView({ block: "center" }), 250);
+
+const h = (tag, props = {}, ...kids) => {
+  const e = document.createElement(tag);
+  for (const k in props) /^(aria-|role$)/.test(k) ? e.setAttribute(k, props[k]) : (e[k] = props[k]);
+  for (const k of kids.flat(Infinity)) e.append(k);
+  return e;
+};
+const fillTo = (el, ...kids) => el.replaceChildren(...kids.flat(Infinity));   // 목록(배열)이 섞여 있어도 풀어서 넣는다
+const L = k => data.labels[k]?.trim() || DEFAULT_LABELS[k];
+let saveFailed = false;
+// ---- 공유(동기화): 키로 암호화한 데이터 1덩어리를 Supabase 에 맡긴다. supabase.sql 먼저 실행하고 아래 두 값을 채운다. ----
+const SYNC = { url: "https://unpfcmdbdcpstsdnatud.supabase.co", anon: "sb_publishable_v6QdtRd2q62-1zplFR6uzw_LL_WppI8" };   // Project URL / anon public key (공개 키). 비어 있으면 공유 기능은 숨겨진다. service_role 키는 절대 넣지 말 것.
+const syncOn = () => !!(SYNC.url && SYNC.anon);
+let sync = null, synced = "", dirty = false, busy = false, pushTimer, syncStatus = "";   // sync = { key, id, aes, rev }
+const saveSync = () => store.set("fridgey.sync", JSON.stringify({ key: sync.key, rev: sync.rev }));
+async function rpc(fn, args) {
+  // 새 형식 공개 키(sb_publishable_…)는 JWT가 아니라서 apikey 헤더만 보낸다(예전 eyJ… 키만 Authorization 도 보냄)
+  const r = await fetch(`${SYNC.url}/rest/v1/rpc/${fn}`, { method: "POST", headers: { apikey: SYNC.anon, ...(SYNC.anon.startsWith("eyJ") && { Authorization: `Bearer ${SYNC.anon}` }), "Content-Type": "application/json" }, body: JSON.stringify(args) });
+  if (!r.ok) throw new Error("http " + r.status);
+  return r.json();
+}
+const save = () => {
+  if (!store.set(LS, JSON.stringify(data)) && !saveFailed) { saveFailed = true; showNotice("이 기기에 저장하지 못했어요. 설정에서 데이터를 내보내 백업해 두세요."); }
+  if (sync && JSON.stringify(data) !== synced) { dirty = true; clearTimeout(pushTimer); pushTimer = setTimeout(syncNow, 800); }
+};
+async function readRoom() {   // 서버 행 → { data, rev } (없으면 null). 키가 틀리면 decrypt 가 던진다.
+  const row = await rpc("get_room", { p_id: sync.id });
+  return row ? { data: normalize(await decrypt(sync.aes, row.blob)), rev: row.rev } : null;
+}
+function adopt(room) {   // 서버 내용으로 이 기기를 맞춘다
+  data = room.data; sync.rev = room.rev; synced = JSON.stringify(data);
+  store.set(LS, JSON.stringify(data)); saveSync();
+  if (!data.zones.some(z => z.id === zoneId)) zoneId = data.zones[0].id;
+}
+async function syncNow() {
+  if (!sync || busy) return;
+  busy = true; clearTimeout(pushTimer);
+  const wasDirty = dirty; dirty = false;
+  let failed = false;
+  try {
+    if (wasDirty) {
+      const snap = JSON.stringify(data);   // 전송하는 내용(보내는 동안 더 바뀌면 dirty 가 다시 켜져 다음에 또 보낸다)
+      const res = await rpc("put_room", { p_id: sync.id, p_blob: await encrypt(sync.aes, data), p_rev: sync.rev });
+      if (res < 0) {   // 다른 기기가 먼저 저장함 → 서버 내용으로 교체(마지막 저장 우선)
+        const room = await readRoom();
+        if (room) { dirty = false; document.querySelectorAll("dialog[open]").forEach(d => d.close()); adopt(room); render(); showNotice("다른 기기에서 먼저 바뀌어서 최신 내용으로 불러왔어요. 방금 한 변경이 안 보이면 다시 입력해 주세요."); }
+        else { sync.rev = 0; dirty = true; }   // 서버 행이 사라짐 → 다음에 다시 만든다
+      } else { sync.rev = res; synced = snap; saveSync(); }
+    } else {
+      const room = await readRoom();
+      if (!room) { sync.rev = 0; dirty = true; }
+      else if (room.rev !== sync.rev && !document.querySelector("dialog[open]")) { adopt(room); render(); }   // 대화상자가 열려 있으면 닫힌 뒤 다음 주기에
+    }
+    syncStatus = "동기화됨 " + new Date().toTimeString().slice(0, 5);
+  } catch { failed = true; dirty = dirty || wasDirty; syncStatus = "연결되지 않아요. 연결되면 다시 맞춰요."; }
+  finally { busy = false; }
+  if (dirty) { clearTimeout(pushTimer); pushTimer = setTimeout(syncNow, failed ? 15000 : 800); }
+}
+async function useKey(key, rev) { const { roomId, aes } = await derive(key); sync = { key, id: roomId, aes, rev }; }
+async function createRoom() {   // 이 기기 데이터를 새 키로 올린다
+  const key = newKey();
+  try {
+    await useKey(key, 0);
+    const res = await rpc("put_room", { p_id: sync.id, p_blob: await encrypt(sync.aes, data), p_rev: 0 });
+    if (res < 0) throw new Error("exists");
+    sync.rev = res; synced = JSON.stringify(data); saveSync(); syncStatus = "동기화됨 " + new Date().toTimeString().slice(0, 5);
+  } catch { sync = null; return alert("서버에 연결하지 못했어요. 잠시 뒤 다시 해 주세요."); }
+  download("fridgey-key.json", keyFileText(key));
+  alert("공유 냉장고를 만들었어요. 방금 저장된 키 파일(fridgey-key.json)을 가족에게 전달하세요. 이 파일을 잃어버리면 복구할 수 없어요.");
+}
+async function joinRoom(text) {   // 키 파일로 참여: 서버 내용으로 이 기기 데이터를 바꾼다
+  let key; try { key = parseKeyFile(text); } catch (e) { return alert(e.message); }
+  const prev = sync;
+  try {
+    await useKey(key, 0);
+    const room = await readRoom();
+    if (!room) { sync = prev; return alert("이 키로 저장된 냉장고를 찾지 못했어요."); }
+    if (!confirm(`이 기기의 데이터를 공유 냉장고(재료 ${room.data.items.length}개, 장보기 ${room.data.shop.length}개)로 바꿔요. 계속할까요?`)) { sync = prev; return; }
+    adopt(room); syncStatus = "동기화됨 " + new Date().toTimeString().slice(0, 5);
+  } catch (e) { sync = prev; alert(/http|fetch|network/i.test(e.message) ? "서버에 연결하지 못했어요. 잠시 뒤 다시 해 주세요." : "키가 맞지 않거나 데이터를 읽을 수 없어요."); }
+}
+function leaveRoom() { sync = null; synced = ""; dirty = false; clearTimeout(pushTimer); store.set("fridgey.sync", ""); syncStatus = ""; }
+const zoneName = id => data.zones.find(z => z.id === id)?.name ?? "";
+const kindLabel = k => k === "cook" ? L("fCook") : L("fDate");
+const fillZones = (sel, cur) => { sel.replaceChildren(...data.zones.map(z => h("option", { value: z.id, textContent: z.name || "구역" }))); sel.value = data.zones.some(z => z.id === cur) ? cur : data.zones[0].id; };
+function download(name, text) {
+  const a = h("a", { href: URL.createObjectURL(new Blob([text], { type: "application/json" })), download: name });
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// ---- 화면 ----
+function applyLabels() {
+  $("title").textContent = L("title"); document.title = L("title");
+  $("tabFridge").textContent = L("tabFridge"); $("tabShop").textContent = L("tabShop");
+  for (const b of $("nav").children) { b.classList.toggle("on", b.dataset.tab === tab); b.dataset.tab === tab ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"); }
+  refreshFridgeBar();
+  $("eNameL").textContent = L("fName"); $("eDateL").textContent = L("fDate") + " / " + L("fCook"); $("eQtyL").textContent = L("fQty");
+  $("eKind").replaceChildren(h("option", { value: "exp", textContent: L("fDate") }), h("option", { value: "cook", textContent: L("fCook") }));
+  shopBar.add.textContent = L("addBtn"); shopBar.name.placeholder = L("fName"); shopBar.qty.placeholder = L("fQty");
+  shopBar.name.setAttribute("aria-label", L("fName")); shopBar.qty.setAttribute("aria-label", L("fQty"));
+}
+let day = "";
+function render() {
+  applyLabels(); fb.msg.textContent = ""; day = new Date().toDateString();
+  const app = $("app"); app.replaceChildren(tab === "fridge" ? fridgeView() : shopView());
+}
+
+// 냉장고: 추가 줄(입력 상태 유지를 위해 한 번만 만들어 재사용) + 구역별 목록
+const fb = {
+  name: h("input", { maxLength: 40, autocomplete: "off", enterKeyHint: "next" }),
+  date: h("input", { inputMode: "numeric", maxLength: 12, autocomplete: "off", enterKeyHint: "done" }),
+  kind: h("button", { type: "button", className: "chip", title: "눌러서 바꾸기" }),
+  zone: h("select", { "aria-label": "구역" }),
+  add: h("button", { type: "submit" }),
+  msg: h("div", { className: "meta msg", role: "status" }),
+};
+fb.root = h("form", { className: "card entry" },
+  h("div", { className: "row" }, h("div", { className: "grow" }, fb.name), fb.add),
+  h("div", { className: "row", style: "margin-top:8px;flex-wrap:wrap" }, h("div", { style: "flex:1 1 120px;min-width:0" }, fb.date), fb.kind, h("div", { style: "flex:1 1 100%" }, fb.zone)),
+  fb.msg);
+fb.hint = h("div", { className: "note" });
+fb.listBox = h("div");
+function refreshFridgeBar() {
+  fb.name.placeholder = L("fName") + " (예: 우유)"; fb.name.setAttribute("aria-label", L("fName"));
+  fb.date.placeholder = kindLabel(kind) + " 예: 261020"; fb.date.setAttribute("aria-label", kindLabel(kind));
+  fb.kind.textContent = kindLabel(kind) + " ⇄";
+  fb.add.textContent = L("addBtn");
+  fillZones(fb.zone, zoneId);
+}
+fb.kind.onclick = () => { kind = kind === "exp" ? "cook" : "exp"; savePref(); refreshFridgeBar(); };
+fb.zone.onchange = () => { zoneId = fb.zone.value; savePref(); };
+fb.date.oninput = () => { fb.date.classList.remove("bad"); fb.msg.textContent = ""; };
+fb.name.onkeydown = e => {   // 이름에서 엔터 → 날짜로 (날짜 비었을 때만), 날짜에서 엔터 → 추가
+  if (e.key === "Enter" && !e.isComposing && fb.name.value.trim() && !fb.date.value.trim()) { e.preventDefault(); fb.date.focus(); }
+};
+fb.root.onsubmit = e => {
+  e.preventDefault();
+  const name = fb.name.value.trim();
+  if (!name) return fb.name.focus();
+  const date = parseDate(fb.date.value, kind);
+  if (date === null) { fb.date.classList.add("bad"); fb.msg.textContent = "날짜를 확인해 주세요. 예: 261020 (26년 10월 20일)"; return fb.date.focus(); }
+  if (data.items.length >= MAX_ROWS) { fb.msg.textContent = `재료는 최대 ${MAX_ROWS}개까지예요. 다 먹은 것을 정리해 주세요.`; return; }
+  data.items.push({ id: uid(), name, qty: "1", zone: fb.zone.value, date, kind });
+  save();
+  fb.name.value = ""; fb.date.value = ""; fb.msg.textContent = `✓ ${name}${date ? ` · ${fmtDate(date)} (${status({ date, kind }).label})` : ""} → ${zoneName(fb.zone.value)}`;
+  renderFridgeList(); fb.name.focus();
+};
+function fridgeView() {
+  renderFridgeList();
+  return h("div", {}, fb.root, fb.hint, fb.listBox);
+}
+function renderFridgeList() {
+  fb.hint.classList.toggle("hide", data.items.length > 0);
+  fb.hint.textContent = `${L("fName")}을(를) 쓰고 ${L("addBtn")}을(를) 누르면 급한 순으로 정리돼요. 날짜는 비워도 돼요. 구역 이름·층 수는 오른쪽 위 ⚙에서 바꿀 수 있어요. ${sync ? "공유 냉장고로 함께 쓰는 중이에요." : "데이터는 이 폰에만 저장돼요."}`;
+  fb.listBox.replaceChildren(...data.zones.map(z => {
+    const list = data.items.filter(i => i.zone === z.id).sort(byUrgency);
+    return h("section", { className: "card zone" },
+      h("h2", {}, h("span", { textContent: z.name || "구역" }), h("span", { textContent: list.length })),
+      list.length ? list.map(i => {
+        const s = status(i);
+        return h("div", { className: "item " + s.level, role: "button", tabIndex: 0, "aria-label": `${i.name} 수정`, onclick: () => openEdit(i), onkeydown(e) { if (e.target === this && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openEdit(i); } } },
+          h("div", { className: "grow", style: "flex:1;min-width:0" },
+            h("div", { className: "name", textContent: i.name + (i.qty !== "1" ? ` ×${i.qty}` : "") }),
+            h("div", { className: "meta", textContent: i.date ? `${kindLabel(i.kind)} ${fmtDate(i.date)}` : "" })),
+          s.label ? h("span", { className: "badge " + s.level, textContent: s.label }) : "");
+      }) : h("div", { className: "meta", textContent: "비어 있음" }));
+  }));
+}
+
+// 장보기
+const shopBar = {
+  name: h("input", { maxLength: 40, autocomplete: "off" }),
+  qty: h("input", { maxLength: 20, autocomplete: "off", value: "1", style: "text-align:center" }),
+  add: h("button", { type: "submit" }),
+};
+shopBar.root = h("form", { className: "card row entry" }, h("div", { style: "flex:1;min-width:0" }, shopBar.name), h("div", { style: "width:72px" }, shopBar.qty), shopBar.add);
+shopBar.listBox = h("div");
+shopBar.root.onsubmit = e => {
+  e.preventDefault();
+  const name = shopBar.name.value.trim();
+  if (!name) return shopBar.name.focus();
+  if (data.shop.length >= MAX_ROWS) return alert(`장보기 목록은 최대 ${MAX_ROWS}개까지예요. 산 것을 정리해 주세요.`);
+  data.shop.push({ id: uid(), name, qty: qty(shopBar.qty.value), done: false });
+  save(); shopBar.name.value = ""; shopBar.qty.value = "1"; renderShopList(); shopBar.name.focus();
+};
+shopBar.qty.onfocus = () => { shopBar.qty.select(); reveal(shopBar.qty); };
+function shopView() { renderShopList(); return h("div", {}, shopBar.root, shopBar.listBox); }
+function renderShopList() {
+  const done = data.shop.filter(s => s.done);
+  shopBar.listBox.replaceChildren(
+    data.shop.length ? h("div", { className: "card" }, data.shop.map(s => h("div", { className: "item", style: "cursor:default" },
+      h("label", { style: "display:flex;align-items:center;justify-content:center;width:44px;min-height:44px;margin:0;flex:none" },
+        h("input", { type: "checkbox", checked: s.done, "aria-label": s.name, style: "width:24px;min-height:24px", onchange() { s.done = this.checked; save(); const n = data.shop.indexOf(s); renderShopList(); shopBar.listBox.querySelectorAll("input[type=checkbox]")[n]?.focus(); } })),
+      h("div", { className: "name", style: "flex:1;min-width:0" + (s.done ? ";text-decoration:line-through;opacity:.6" : ""), textContent: s.name }),
+      h("input", { value: s.qty, "aria-label": `${s.name} ${L("fQty")}`, style: "width:72px;text-align:center", maxLength: 20, onfocus() { this.select(); reveal(this); }, oninput() { s.qty = qty(this.value); save(); }, onchange() { this.value = s.qty; } }),
+      h("button", { className: "ghost x", textContent: "✕", "aria-label": `${s.name} 삭제`, style: "padding:8px 12px;min-width:44px", onclick() { data.shop = data.shop.filter(x => x !== s); save(); renderShopList(); } }))))
+      : h("div", { className: "empty", textContent: `사려는 것을 위 칸에 적어 보세요. 사온 뒤 체크하면 ${L("tabFridge")}에 바로 넣을 수 있어요.` }),
+    done.length ? h("button", { textContent: `체크한 ${done.length}개를 ${L("tabFridge")}에 넣기`, style: "width:100%", onclick: openMove }) : "");
+}
+
+// ---- 재료 수정 ----
+function openEdit(it) {
+  editing = it;
+  $("eName").value = it.name; $("eDate").value = fmtDate(it.date); $("eDate").classList.remove("bad"); $("eErr").textContent = "";
+  $("eKind").value = it.kind; $("eQty").value = it.qty; fillZones($("eZone"), it.zone);
+  $("eDlg").showModal(); $("eCancel").focus();   // 폰 키보드가 바로 뜨지 않게
+}
+$("eDate").oninput = () => { $("eDate").classList.remove("bad"); $("eErr").textContent = ""; };
+$("eForm").onsubmit = e => {
+  e.preventDefault();
+  const name = $("eName").value.trim(), date = parseDate($("eDate").value, $("eKind").value);
+  if (!name) return $("eName").focus();
+  if (date === null) { $("eDate").classList.add("bad"); $("eErr").textContent = "날짜를 확인해 주세요. 예: 261020"; return $("eDate").focus(); }
+  Object.assign(editing, { name, date, kind: $("eKind").value, qty: qty($("eQty").value), zone: $("eZone").value });
+  save(); $("eDlg").close(); render();
+};
+$("eCancel").onclick = () => $("eDlg").close();
+let undoTimer;
+$("eDel").onclick = () => {
+  const it = editing;
+  data.items = data.items.filter(x => x !== it); save(); $("eDlg").close(); render();
+  fb.msg.replaceChildren(`‘${it.name}’ 삭제됨 · `, h("a", { href: "#", textContent: "실행취소", style: "color:var(--main);font-weight:600;padding:10px 4px", onclick(e) { e.preventDefault(); data.items.push(it); save(); render(); } }));
+  clearTimeout(undoTimer); undoTimer = setTimeout(() => { if (fb.msg.querySelector("a")) fb.msg.textContent = ""; }, 8000);
+};
+
+// ---- 장보기 → 냉장고 ----
+let moveRows = [];
+function openMove() {
+  fillZones($("mZone"), zoneId);
+  moveRows = data.shop.filter(s => s.done).map(s => ({ s, date: h("input", { inputMode: "numeric", maxLength: 12, autocomplete: "off", placeholder: L("fDate") + " 예: 261020 (비워도 돼요)", "aria-label": s.name }) }));
+  moveRows.forEach((r, i) => {
+    r.date.oninput = () => { r.date.classList.remove("bad"); $("mErr").textContent = ""; };
+    r.date.onfocus = () => reveal(r.date);
+    r.date.onkeydown = e => { if (e.key === "Enter" && i < moveRows.length - 1) { e.preventDefault(); moveRows[i + 1].date.focus(); } };
+  });
+  $("mErr").textContent = "";
+  $("mRows").replaceChildren(...moveRows.map(r => h("div", { style: "margin-top:10px" },
+    h("div", { className: "name", textContent: r.s.name + (r.s.qty !== "1" ? ` ×${r.s.qty}` : "") }), r.date)));
+  $("mDlg").showModal(); moveRows[0]?.date.focus();
+}
+$("mForm").onsubmit = e => {
+  e.preventDefault();
+  const dates = moveRows.map(r => parseDate(r.date.value, "exp"));
+  if (dates.includes(null)) { const i = dates.indexOf(null); moveRows[i].date.classList.add("bad"); $("mErr").textContent = "날짜를 확인해 주세요. 예: 261020"; return moveRows[i].date.focus(); }
+  if (data.items.length + moveRows.length > MAX_ROWS) { $("mErr").textContent = `재료는 최대 ${MAX_ROWS}개까지예요. 다 먹은 것을 정리해 주세요.`; return; }
+  zoneId = $("mZone").value; savePref();
+  moveRows.forEach((r, i) => data.items.push({ id: uid(), name: r.s.name, qty: r.s.qty, zone: zoneId, date: dates[i], kind: "exp" }));
+  const moved = new Set(moveRows.map(r => r.s)); data.shop = data.shop.filter(s => !moved.has(s));
+  save(); $("mDlg").close(); tab = "fridge"; render();
+};
+$("mCancel").onclick = () => $("mDlg").close();
+
+// ---- 설정 ----
+function openSettings() { renderSettings(); $("sDlg").showModal(); }
+const BAD_FILE = "이 파일은 Fridgey에서 내보낸 데이터가 아닌 것 같아요. '데이터 내보내기'로 저장한 .json 파일을 골라 주세요.";
+function renderSettings() {
+  const file = h("input", { type: "file", accept: ".json,application/json", className: "hide" });
+  file.onchange = async () => {
+    try {
+      const raw = JSON.parse(await file.files[0].text());
+      if (!raw || typeof raw !== "object" || !["items", "shop", "zones"].some(k => Array.isArray(raw[k]))) return alert(BAD_FILE);
+      const d = normalize(raw);
+      if (!confirm(`지금 데이터를 파일 내용으로 바꿔요. (재료 ${d.items.length}개, 장보기 ${d.shop.length}개) 계속할까요?`)) return;
+      data = d; save(); zoneId = data.zones[0].id; renderSettings(); render();
+    } catch { alert(BAD_FILE); } finally { file.value = ""; }
+  };
+  const keyFile = h("input", { type: "file", accept: ".json,application/json", className: "hide" });
+  keyFile.onchange = async () => { try { await joinRoom(await keyFile.files[0].text()); } finally { keyFile.value = ""; renderSettings(); render(); } };
+  fillTo($("sBody"),
+    h("h3", { textContent: "구역 (층)" }),
+    data.zones.map(z => h("div", { className: "row", style: "margin-bottom:8px" },
+      h("input", { value: z.name, maxLength: 20, "aria-label": "구역 이름", oninput() { z.name = this.value; save(); }, onblur() { if (!z.name.trim()) { z.name = "구역"; this.value = z.name; save(); } } }),
+      h("button", { className: "danger", textContent: "✕", "aria-label": `${z.name} 구역 삭제`, style: "padding:8px 12px;min-width:44px", onclick() { delZone(z); } }))),
+    h("button", { className: "ghost", textContent: "＋ 구역 추가", style: "width:100%", onclick() { data.zones.push({ id: uid(), name: `${data.zones.length + 1}층` }); save(); renderSettings(); } }),
+    syncOn() ? [
+      h("h3", { textContent: "공유 (가족과 함께 쓰기)" }),
+      sync ? [
+        h("div", { className: "note", textContent: `공유 중이에요. ${syncStatus || "곧 동기화돼요."}` }),
+        h("button", { className: "ghost", textContent: "키 파일 다시 저장", style: "width:100%", onclick: () => download("fridgey-key.json", keyFileText(sync.key)) }),
+        h("button", { className: "danger", textContent: "이 기기에서 공유 끊기", style: "width:100%;margin-top:8px", onclick() {
+          if (confirm("이 기기에서 공유를 끊어요. (데이터는 이 기기에 남아요.) 키 파일이 없으면 다시 참여할 수 없어요. 계속할까요?")) { leaveRoom(); renderSettings(); render(); }
+        } })]
+      : [
+        h("div", { className: "note", textContent: "키 파일을 가진 사람끼리 같은 냉장고를 함께 써요. 데이터는 키로 암호화돼서 서버에는 읽을 수 없는 글자만 저장돼요. 키 파일을 잃어버리면 복구할 수 없어요." }),
+        h("button", { textContent: "공유 냉장고 만들기", style: "width:100%", onclick: async () => { await createRoom(); renderSettings(); render(); } }),
+        h("button", { className: "ghost", textContent: "키 파일로 참여하기", style: "width:100%;margin-top:8px", onclick: () => keyFile.click() }), keyFile]] : "",
+    h("h3", { textContent: "데이터" }),
+    h("div", { className: "note" },
+      h("div", { textContent: sync ? "① 공유 중이라 데이터가 암호화돼서 서버에도 저장돼요. 이 기기에도 복사본이 있어요." : "① 데이터는 이 기기 브라우저에만 저장돼요. 사이트 데이터를 지우면 사라져요." }),
+      h("div", { textContent: "② 가족과 나누려면 '내보내기'로 만든 파일을 카톡·메일로 보내고, 받는 사람이 '불러오기'를 해요. (받는 사람 기기의 기존 데이터는 바뀌어요.)" }),
+      h("div", { textContent: "③ 가끔 내보내기로 백업해 두세요." }),
+      h("div", { textContent: "홈 화면에 추가하면 앱처럼 바로 열려요: 공유 → 홈 화면에 추가", style: "margin-top:8px" })),
+    h("button", { className: "ghost", textContent: "데이터 내보내기 (파일 저장)", style: "width:100%", onclick: () => download("fridgey-data.json", JSON.stringify(data, null, 2)) }),
+    h("button", { className: "ghost", textContent: "데이터 불러오기", style: "width:100%;margin-top:8px", onclick: () => file.click() }), file,
+    h("details", { style: "margin-top:18px" },
+      h("summary", { textContent: "이름 바꾸기 — 비워 두면 기본 이름이에요", style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--main);padding:10px 0" }),
+      Object.keys(DEFAULT_LABELS).map(k => h("div", {},
+        h("label", { textContent: LABEL_HELP[k], htmlFor: "sl-" + k }),
+        h("input", { id: "sl-" + k, value: data.labels[k] ?? "", placeholder: DEFAULT_LABELS[k], maxLength: 20, oninput() { data.labels[k] = this.value; save(); applyLabels(); } })))));
+}
+function delZone(z) {
+  if (data.zones.length <= 1) return alert("구역은 최소 1개 있어야 해요.");
+  const n = data.items.filter(i => i.zone === z.id).length;
+  if (!confirm(n ? `"${z.name}"의 재료 ${n}개는 첫 번째 구역으로 옮겨져요. 삭제할까요?` : `"${z.name}"을(를) 삭제할까요?`)) return;
+  data.zones = data.zones.filter(x => x !== z);
+  data.items.forEach(i => { if (i.zone === z.id) i.zone = data.zones[0].id; });
+  if (zoneId === z.id) { zoneId = data.zones[0].id; savePref(); }
+  save(); renderSettings();
+}
+$("gear").onclick = openSettings;
+$("sClose").onclick = () => $("sDlg").close();
+$("sDlg").onclose = () => { data.zones.forEach(z => { if (!z.name.trim()) z.name = "구역"; }); save(); render(); };
+document.onvisibilitychange = () => {
+  if (document.hidden) return;
+  if (day !== new Date().toDateString() && !document.querySelector("dialog[open]")) render();
+  syncNow();
+};
+setInterval(() => { if (!document.hidden) syncNow(); }, 30000);
+$("nav").onclick = e => { const t = e.target.closest("button")?.dataset.tab; if (t) { tab = t; render(); } };
+
+if (typeof window.HTMLDialogElement?.prototype.showModal !== "function" || !Element.prototype.replaceChildren) {
+  document.body.textContent = "최신 브라우저에서 열어 주세요.";
+} else {
+  try { render(); } catch {
+    if (rawData) store.set("fridgey.corrupt", rawData);
+    data = normalize(null); zoneId = data.zones[0].id; showNotice("저장된 데이터에 문제가 있어 새로 시작했어요."); render();
+  }
+  try { navigator.storage?.persist?.(); } catch {}
+  if (syncOn()) (async () => { try { const s = JSON.parse(store.get("fridgey.sync")); if (s?.key) { await useKey(s.key, s.rev | 0); syncNow(); } } catch {} })();
+}
+</script>
+</body>
+</html>
