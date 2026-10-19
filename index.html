@@ -6,6 +6,23 @@
 <meta name="theme-color" content="#0e8a86">
 <meta name="theme-color" content="#0d1a1a" media="(prefers-color-scheme:dark)">
 <title>Fridgey</title>
+<script>
+// 테마는 화면이 그려지기 전에 적용한다(기본 테마가 잠깐 보였다가 바뀌지 않게). data.theme 과 같은 값을 fridgey.skin 에 따로 둔다.
+var SKINS = { mint: ["민트", "#0e8a86", "#0d1a1a"], pink: ["핑크", "#d1127a", "#1c0b14"], white: ["화이트", "#ffffff", "#ffffff"], purple: ["퍼플", "#6d28d9", "#120b22"], blue: ["블루", "#1d5fd6", "#0a1222"] };
+function applySkin(s) {
+  if (!SKINS[s]) s = "mint";
+  document.documentElement.dataset.skin = s;
+  var m = document.querySelectorAll('meta[name="theme-color"]');   // 폰 상단 상태바 색
+  if (m[0]) m[0].content = SKINS[s][1];
+  if (m[1]) m[1].content = SKINS[s][2];
+  try { localStorage.setItem("fridgey.skin", s); } catch (e) {}
+}
+(function () {
+  var s = null;
+  try { s = localStorage.getItem("fridgey.skin") || JSON.parse(localStorage.getItem("fridgey.data")).theme; } catch (e) {}
+  applySkin(s);
+})();
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap">
@@ -15,6 +32,16 @@
 <style>
 :root{--bg:#f4f8f8;--card:#fff;--ink:#12302f;--sub:#5c7776;--line:#dbe7e6;--field:#769594;--main:#0b7571;--main-ink:#fff;--red:#c62828;--orange:#b45f00;--ok:#1f7a4d;--radius:14px;--shadow:0 1px 2px rgba(18,48,47,.07);color-scheme:light dark}
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0d1a1a;--card:#152626;--ink:#e6f2f1;--sub:#8fb0ae;--line:#2c4a49;--field:#4f7371;--main:#2bb5b0;--main-ink:#06201f;--red:#ff6b6b;--orange:#ffa94d;--ok:#51cf8f;--shadow:0 0 0 transparent}}
+/* 테마(data-skin, 냉장고마다 공유). 민트=기본(위). 화이트는 다크 모드에서도 밝게. 대비는 WCAG AA 확인함 */
+:root[data-skin=pink]{--bg:#fff0f6;--card:#fff;--ink:#3a0d25;--sub:#8c4569;--line:#f6d2e3;--field:#c06a94;--main:#d1127a;--main-ink:#fff;--shadow:0 1px 2px rgba(58,13,37,.08)}
+:root[data-skin=purple]{--bg:#f5f0ff;--card:#fff;--ink:#22113f;--sub:#6a5a8c;--line:#e3d9fa;--field:#8f7bbf;--main:#6d28d9;--main-ink:#fff;--shadow:0 1px 2px rgba(34,17,63,.08)}
+:root[data-skin=blue]{--bg:#eff5ff;--card:#fff;--ink:#0b1f3f;--sub:#4f6386;--line:#d6e4fb;--field:#7189b3;--main:#1d5fd6;--main-ink:#fff;--shadow:0 1px 2px rgba(11,31,63,.08)}
+:root[data-skin=white]{--bg:#fafafa;--card:#fff;--ink:#1d1d1f;--sub:#6e6e73;--line:#e5e5ea;--field:#8e8e93;--main:#1d1d1f;--main-ink:#fff;--red:#c62828;--orange:#b45f00;--ok:#1f7a4d;--shadow:0 1px 2px rgba(0,0,0,.06);color-scheme:light}
+@media(prefers-color-scheme:dark){
+  :root[data-skin=pink]:not([data-theme=light]){--bg:#1c0b14;--card:#2a1220;--ink:#ffe6f2;--sub:#e3a3c3;--line:#4d2238;--field:#9a5b7b;--main:#ff63b1;--main-ink:#2a0617;--shadow:0 0 0 transparent}
+  :root[data-skin=purple]:not([data-theme=light]){--bg:#120b22;--card:#1d1433;--ink:#efe8ff;--sub:#b3a3d9;--line:#352a55;--field:#6e5f99;--main:#a78bfa;--main-ink:#1a0d33;--shadow:0 0 0 transparent}
+  :root[data-skin=blue]:not([data-theme=light]){--bg:#0a1222;--card:#111d33;--ink:#e6efff;--sub:#9fb3d6;--line:#26385a;--field:#5b7299;--main:#5b9dff;--main-ink:#08172e;--shadow:0 0 0 transparent}
+}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 "Gowun Dodum",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;padding-bottom:calc(72px + env(safe-area-inset-bottom))}
@@ -89,6 +116,7 @@ main>div>.sugg{margin:-2px 0 8px}
 .segs{display:flex;flex-wrap:wrap;gap:6px}
 .segs .seg{flex:1 1 0;min-width:56px;min-height:44px;padding:8px 10px;background:var(--card);color:var(--ink);border:1.5px solid var(--field);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .segs .seg.on{background:var(--main);color:var(--main-ink);border-color:var(--main)}
+.dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px;box-shadow:0 0 0 1.5px var(--field)}
 .hide{display:none!important}
 .err{font-size:14px;color:var(--red);margin-top:4px}
 .err:empty{display:none}
@@ -293,6 +321,7 @@ function normalize(d) {
     if (!s || typeof s.name !== "string" || !s.name.trim() || o.shop.length >= MAX_ROWS) continue;
     o.shop.push({ id: String(s.id || uid()), name: s.name.slice(0, 40), qty: qty(s.qty), done: !!s.done });
   }
+  o.theme = ["mint", "pink", "white", "purple", "blue"].includes(d.theme) ? d.theme : "mint";   // 테마(냉장고마다 공유). 목록은 <head>의 SKINS 와 같게
   o.words = Object.create(null);   // 자동완성(이 냉장고에서 쓴 이름과 횟수). __proto__ 같은 이름도 안전하게
   Object.entries(d.words && typeof d.words === "object" ? d.words : {})
     .filter(([k, n]) => k.trim() && k.length <= 40 && Number.isInteger(n) && n > 0)
@@ -421,7 +450,7 @@ function applyLabels() {
 }
 let day = "";
 function render() {
-  applyLabels(); fb.msg.textContent = ""; day = new Date().toDateString();
+  applySkin(data.theme); applyLabels(); fb.msg.textContent = ""; day = new Date().toDateString();
   const app = $("app"); app.replaceChildren(tab === "fridge" ? fridgeView() : shopView());
 }
 
@@ -606,6 +635,11 @@ function renderSettings() {
       h("input", { value: z.name, maxLength: 20, "aria-label": "구역 이름", oninput() { z.name = this.value; save(); }, onblur() { if (!z.name.trim()) { z.name = "구역"; this.value = z.name; save(); } } }),
       h("button", { className: "danger", textContent: "✕", "aria-label": `${z.name} 구역 삭제`, style: "padding:8px 12px;min-width:44px", onclick() { delZone(z); } }))),
     h("button", { className: "ghost", textContent: "＋ 구역 추가", style: "width:100%", onclick() { data.zones.push({ id: uid(), name: `${data.zones.length + 1}층` }); save(); renderSettings(); } }),
+    h("h3", { textContent: "테마 (함께 쓰는 사람과 공유돼요)" }),
+    h("div", { className: "segs", role: "group", "aria-label": "테마" }, Object.keys(SKINS).map(s => h("button", {
+      type: "button", className: "seg" + (data.theme === s ? " on" : ""), "aria-pressed": String(data.theme === s),
+      onclick() { data.theme = s; save(); applySkin(s); renderSettings(); },
+    }, h("span", { className: "dot", style: `background:${SKINS[s][1]}` }), SKINS[s][0]))),
     syncOn() ? [
       h("h3", { textContent: "공유 (가족과 함께 쓰기)" }),
       sync ? [
