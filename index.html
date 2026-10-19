@@ -117,6 +117,15 @@ main>div>.sugg{margin:-2px 0 8px}
 .segs .seg{flex:1 1 0;min-width:56px;min-height:44px;padding:8px 10px;background:var(--card);color:var(--ink);border:1.5px solid var(--field);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .segs .seg.on{background:var(--main);color:var(--main-ink);border-color:var(--main)}
 .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px;box-shadow:0 0 0 1.5px var(--field)}
+#kDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;border:0;border-radius:0;padding:24px 20px;box-shadow:none}
+#kDlg[open]{display:flex;align-items:center;justify-content:center}
+#kDlg::backdrop{background:var(--bg)}
+.gate{width:100%;max-width:420px;text-align:center}
+.gate h2{font-size:26px;margin:0 0 12px}
+.gate p{font-size:17px;line-height:1.6;margin:0 0 10px}
+.gate strong{color:var(--red)}
+.gate .big{width:100%;min-height:60px;font-size:19px;margin-top:20px}
+.gate .ghost{width:100%;margin-top:12px}
 .hide{display:none!important}
 .err{font-size:14px;color:var(--red);margin-top:4px}
 .err:empty{display:none}
@@ -167,6 +176,16 @@ main>div>.sugg{margin:-2px 0 8px}
   <h2>설정</h2>
   <div id="sBody"></div>
   <div class="actions stick"><button type="button" id="sClose">닫기</button></div>
+</dialog>
+
+<!-- 키 보관 (새 키가 생기면 화면 전체로 띄우고, 보관하기 전에는 닫히지 않음) -->
+<dialog id="kDlg" aria-labelledby="kTitle"><div class="gate" id="kBody"></div></dialog>
+
+<!-- 사용법 안내 (시작할 때 / 설정 → 설명 보기) -->
+<dialog id="gDlg" aria-labelledby="gTitle">
+  <h2 id="gTitle">Fridgey 사용법</h2>
+  <div id="gBody"></div>
+  <div class="actions stick" id="gActs"></div>
 </dialog>
 
 <script>
@@ -384,7 +403,7 @@ async function syncNow() {
       const res = await rpc("put_room", { p_id: sync.id, p_blob: await encrypt(sync.aes, data), p_rev: sync.rev });
       if (res < 0) {   // 다른 기기가 먼저 저장함 → 서버 내용으로 교체(마지막 저장 우선)
         const room = await readRoom();
-        if (room) { dirty = false; document.querySelectorAll("dialog[open]").forEach(d => d.close()); adopt(room); render(); showNotice("다른 기기에서 먼저 바뀌어서 최신 내용으로 불러왔어요. 방금 한 변경이 안 보이면 다시 입력해 주세요."); }
+        if (room) { dirty = false; document.querySelectorAll("dialog[open]:not(#kDlg)").forEach(d => d.close()); adopt(room); render(); showNotice("다른 기기에서 먼저 바뀌어서 최신 내용으로 불러왔어요. 방금 한 변경이 안 보이면 다시 입력해 주세요."); }
         else { sync.rev = 0; dirty = true; }   // 서버 행이 사라짐 → 다음에 다시 만든다
       } else { sync.rev = res; synced = snap; saveSync(); }
     } else {
@@ -404,10 +423,9 @@ async function createRoom() {   // 이 기기 데이터를 새 키로 올린다
     await useKey(key, 0);
     const res = await rpc("put_room", { p_id: sync.id, p_blob: await encrypt(sync.aes, data), p_rev: 0 });
     if (res < 0) throw new Error("exists");
-    sync.rev = res; synced = JSON.stringify(data); saveSync(); syncStatus = "동기화됨 " + new Date().toTimeString().slice(0, 5);
+    sync.rev = res; synced = JSON.stringify(data); saveSync(); store.set("fridgey.noauto", ""); syncStatus = "동기화됨 " + new Date().toTimeString().slice(0, 5);
   } catch { sync = null; return alert("서버에 연결하지 못했어요. 잠시 뒤 다시 해 주세요."); }
-  download("fridgey-key.json", keyFileText(key));
-  alert("공유 냉장고를 만들었어요. 방금 저장된 키 파일(fridgey-key.json)을 가족에게 전달하세요. 이 파일을 잃어버리면 복구할 수 없어요.");
+  await keyGate();
 }
 async function joinRoom(text) {   // 키 파일로 참여: 서버 내용으로 이 기기 데이터를 바꾼다
   let key; try { key = parseKeyFile(text); } catch (e) { return alert(e.message); }
@@ -417,10 +435,79 @@ async function joinRoom(text) {   // 키 파일로 참여: 서버 내용으로 �
     const room = await readRoom();
     if (!room) { sync = prev; return alert("이 키로 저장된 냉장고를 찾지 못했어요."); }
     if (!confirm(`이 기기의 데이터를 공유 냉장고(재료 ${room.data.items.length}개, 장보기 ${room.data.shop.length}개)로 바꿔요. 계속할까요?`)) { sync = prev; return; }
-    adopt(room); syncStatus = "동기화됨 " + new Date().toTimeString().slice(0, 5);
+    adopt(room); store.set("fridgey.keysaved", sync.id); syncStatus = "동기화됨 " + new Date().toTimeString().slice(0, 5);   // 받은 키 파일로 들어왔으니 이미 보관한 것
   } catch (e) { sync = prev; alert(/http|fetch|network/i.test(e.message) ? "서버에 연결하지 못했어요. 잠시 뒤 다시 해 주세요." : "키가 맞지 않거나 데이터를 읽을 수 없어요."); }
 }
-function leaveRoom() { sync = null; synced = ""; dirty = false; clearTimeout(pushTimer); store.set("fridgey.sync", ""); syncStatus = ""; }
+function leaveRoom() { sync = null; synced = ""; dirty = false; clearTimeout(pushTimer); store.set("fridgey.sync", ""); store.set("fridgey.noauto", "1"); syncStatus = ""; }   // 끊은 기기는 다음에 자동으로 새 키를 만들지 않는다
+async function autoRoom() {   // 처음 켠 기기: 키를 자동으로 만들어 서버 백업을 시작(오프라인이면 연결될 때 올라간다)
+  await useKey(newKey(), 0); dirty = true; saveSync(); syncNow();
+}
+async function shareKey() {   // 키 파일 보관: 공유 창(카톡 나에게 보내기 등)이 되면 그걸로, 안 되면 파일 저장. 보관했으면 true(공유 창에서 취소하면 false)
+  const text = keyFileText(sync.key), name = "fridgey-key.json";
+  let done = false;
+  try {
+    const f = new File([text], name, { type: "application/json" });
+    if (navigator.canShare?.({ files: [f] })) { await navigator.share({ files: [f], title: "Fridgey 키 파일" }); done = true; }
+  } catch (e) { if (e.name === "AbortError") return false; }
+  if (!done) download(name, text);
+  store.set("fridgey.keysaved", sync.id);
+  return true;
+}
+// 새 키가 생겼는데 아직 보관 안 했으면 화면 전체 창으로 막는다. 보관하거나(또는 받은 키로 참여하면) 닫힘
+function keyGate() {
+  if (!sync || store.get("fridgey.keysaved") === sync.id) return Promise.resolve();
+  return new Promise(resolve => {
+    const file = h("input", { type: "file", accept: ".json,application/json", className: "hide" });
+    const msg = h("p", { className: "err", role: "alert" });
+    const finish = () => { if ($("kDlg").open) $("kDlg").close(); render(); resolve(); };
+    file.onchange = async () => {
+      try { await joinRoom(await file.files[0].text()); } finally { file.value = ""; }
+      if (store.get("fridgey.keysaved") === sync?.id) finish();
+    };
+    fillTo($("kBody"),
+      h("h2", { id: "kTitle", textContent: "냉장고 열쇠를 꼭 보관하세요" }),
+      h("p", { textContent: "이 냉장고는 자동으로 암호화돼서 서버에 백업돼요. 여는 열쇠는 '키 파일' 하나뿐이에요." }),
+      h("p", {}, "쿠키·사이트 데이터를 지우거나 폰을 바꾸면 ", h("strong", { textContent: "이 키 파일로만 되살릴 수 있고, 잃어버리면 아무도 복구할 수 없어요." })),
+      h("p", { textContent: "카톡 '나에게 보내기'로 보내 두면 가장 편해요. 함께 쓸 사람에게도 이 파일을 보내 주세요." }),
+      msg,
+      h("button", { className: "big", textContent: "키 파일 보관하기", async onclick() {
+        if (await shareKey()) finish(); else msg.textContent = "보관이 끝나야 다음으로 넘어가요. 다시 눌러 주세요.";
+      } }),
+      h("button", { className: "ghost", textContent: "이미 받은 키 파일이 있어요 (참여하기)", onclick: () => file.click() }), file);
+    $("kDlg").showModal();
+  });
+}
+$("kDlg").oncancel = e => e.preventDefault();   // 뒤로가기·Esc 로 닫히지 않게
+
+// ---- 사용법 안내: 시작할 때 보여 주고 '7일간 보지 않기 / 다시 보지 않기'를 이 기기에 기억. 설정 → 설명 보기로 언제든 ----
+const GUIDE = "fridgey.guide";
+const guidePref = () => { try { return JSON.parse(store.get(GUIDE)) || {}; } catch { return {}; } };
+const guideHidden = () => { const g = guidePref(); return !!g.never || g.until > Date.now(); };
+function guideState() {
+  const g = guidePref();
+  if (g.never) return "시작할 때 사용법 안내: 다시 보지 않음";
+  if (g.until > Date.now()) { const d = new Date(g.until); return `시작할 때 사용법 안내: ${d.getMonth() + 1}월 ${d.getDate()}일까지 숨김`; }
+  return "시작할 때 사용법 안내: 보임";
+}
+function openGuide(fromSettings) {
+  fillTo($("gBody"),
+    h("div", { className: "note" },
+      h("div", { textContent: `① ${L("fName")}을(를) 쓰고 날짜(예: 261020)를 넣은 뒤 ${L("addBtn")}. 글자를 치면 자주 쓴 이름이 떠서 누르면 바로 들어가요.` }),
+      h("div", { textContent: "② 이 냉장고는 자동으로 암호화돼서 서버에 백업돼요. 여는 열쇠는 '키 파일' 하나뿐이라 서버 주인도 내용을 못 봐요." }),
+      h("div", { textContent: "③ 키 파일을 카톡 '나에게 보내기' 등으로 꼭 보관하세요. 쿠키·사이트 데이터를 지우거나 폰을 바꿔도 ⚙ → '키 파일로 참여하기'로 그대로 되살릴 수 있어요." }),
+      h("div", { textContent: "④ 함께 쓰려면 키 파일을 보내 주세요. 받은 사람은 ⚙ → '키 파일로 참여하기'. 이미 받은 키 파일이 있다면 지금 그렇게 하면 돼요." }),
+      h("div", { textContent: "⑤ 키 파일을 잃어버리면 아무도(만든 사람도) 복구할 수 없어요." })),
+    sync ? h("button", { textContent: "키 파일 보관하기", style: "width:100%", onclick: shareKey })
+      : h("div", { className: "meta", textContent: syncOn() ? "아직 서버 백업이 켜져 있지 않아요. ⚙ → '공유 냉장고 만들기'로 시작할 수 있어요." : "" }));
+  const hide = days => { store.set(GUIDE, JSON.stringify(days ? { until: Date.now() + days * 864e5 } : { never: true })); $("gDlg").close(); };
+  fillTo($("gActs"), fromSettings
+    ? h("button", { type: "button", textContent: "닫기", onclick: () => $("gDlg").close() })
+    : [h("button", { type: "button", className: "ghost", textContent: "7일간 보지 않기", onclick: () => hide(7) }),
+       h("button", { type: "button", className: "ghost", textContent: "다시 보지 않기", onclick: () => hide(0) })]);
+  $("gDlg").showModal();
+}
+$("gDlg").oncancel = e => e.preventDefault();   // 시작 안내는 두 선택지 중 하나로 닫는다(뒤로가기·Esc로 닫히지 않게)
+$("gDlg").onclose = () => { if ($("sDlg").open) renderSettings(); };
 const zoneName = id => data.zones.find(z => z.id === id)?.name ?? "";
 const kindLabel = k => k === "cook" ? L("fCook") : L("fDate");
 // 구역 선택 = 구역마다 버튼 하나(한 번 누르면 선택). 고른 값은 box.value 에 두고 box.onchange 를 부른다(예전 select 와 같은 사용법)
@@ -644,7 +731,7 @@ function renderSettings() {
       h("h3", { textContent: "공유 (가족과 함께 쓰기)" }),
       sync ? [
         h("div", { className: "note", textContent: `공유 중이에요. ${syncStatus || "곧 동기화돼요."}` }),
-        h("button", { className: "ghost", textContent: "키 파일 다시 저장", style: "width:100%", onclick: () => download("fridgey-key.json", keyFileText(sync.key)) }),
+        h("button", { className: "ghost", textContent: "키 파일 보관하기 (카톡 나에게 보내기 등)", style: "width:100%", onclick: shareKey }),
         h("button", { className: "danger", textContent: "이 기기에서 공유 끊기", style: "width:100%;margin-top:8px", onclick() {
           if (confirm("이 기기에서 공유를 끊어요. (데이터는 이 기기에 남아요.) 키 파일이 없으면 다시 참여할 수 없어요. 계속할까요?")) { leaveRoom(); renderSettings(); render(); }
         } })]
@@ -660,6 +747,10 @@ function renderSettings() {
       h("div", { textContent: "홈 화면에 추가하면 앱처럼 바로 열려요: 공유 → 홈 화면에 추가", style: "margin-top:8px" })),
     h("button", { className: "ghost", textContent: "데이터 내보내기 (파일 저장)", style: "width:100%", onclick: () => download("fridgey-data.json", JSON.stringify(data, null, 2)) }),
     h("button", { className: "ghost", textContent: "데이터 불러오기", style: "width:100%;margin-top:8px", onclick: () => file.click() }), file,
+    h("h3", { textContent: "도움말" }),
+    h("div", { className: "meta", textContent: guideState() }),
+    h("button", { className: "ghost", textContent: "설명 보기", style: "width:100%;margin-top:8px", onclick: () => openGuide(true) }),
+    guideHidden() ? h("button", { className: "ghost", textContent: "시작할 때 다시 보이기", style: "width:100%;margin-top:8px", onclick() { store.set(GUIDE, ""); renderSettings(); } }) : "",
     h("details", { style: "margin-top:18px", open: wordsOpen, ontoggle() { wordsOpen = this.open; } },
       h("summary", { textContent: `자동완성 단어 (${Object.keys(data.words).length}개) — 잘못 들어간 건 ✕로 지워요`, style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--main);padding:10px 0" }),
       Object.keys(data.words).length ? Object.keys(data.words).sort((a, b) => data.words[b] - data.words[a]).map(w => h("div", { className: "row", style: "margin-bottom:6px" },
@@ -700,7 +791,15 @@ if (typeof window.HTMLDialogElement?.prototype.showModal !== "function" || !Elem
     data = normalize(null); zoneId = data.zones[0].id; showNotice("저장된 데이터에 문제가 있어 새로 시작했어요."); render();
   }
   try { navigator.storage?.persist?.(); } catch {}
-  if (syncOn()) (async () => { try { const s = JSON.parse(store.get("fridgey.sync")); if (s?.key) { await useKey(s.key, s.rev | 0); syncNow(); } } catch {} })();
+  (async () => {
+    if (syncOn()) try {
+      const s = JSON.parse(store.get("fridgey.sync") || "null");
+      if (s?.key) { await useKey(s.key, s.rev | 0); syncNow(); }
+      else if (store.get("fridgey.noauto") !== "1") await autoRoom();   // 처음 켠 기기: 자동 백업 시작
+    } catch {}
+    await keyGate();   // 새 키면 먼저 보관하게(화면 전체)
+    if (!guideHidden() && !document.querySelector("dialog[open]")) { render(); openGuide(false); }
+  })();
 }
 </script>
 </body>
