@@ -82,6 +82,13 @@ dialog summary{min-height:44px}
 .note{font-size:14px;line-height:1.55;color:var(--sub);background:var(--card);border:1px dashed var(--field);border-radius:var(--radius);padding:12px 14px;margin:12px 0}
 dialog .note{background:var(--bg)}
 .note div+div{margin-top:4px}
+.sugg{display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:2px;scrollbar-width:none}
+.sugg::-webkit-scrollbar{display:none}
+.sugg .chip{font-size:15px;color:var(--ink)}
+main>div>.sugg{margin:-2px 0 8px}
+.segs{display:flex;flex-wrap:wrap;gap:6px}
+.segs .seg{flex:1 1 0;min-width:56px;min-height:44px;padding:8px 10px;background:var(--card);color:var(--ink);border:1.5px solid var(--field);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.segs .seg.on{background:var(--main);color:var(--main-ink);border-color:var(--main)}
 .hide{display:none!important}
 .err{font-size:14px;color:var(--red);margin-top:4px}
 .err:empty{display:none}
@@ -111,7 +118,7 @@ dialog .note{background:var(--bg)}
     <label for="eDate" id="eDateL"></label><input id="eDate" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="예: 261020"><div class="err" id="eErr"></div>
     <label for="eKind">날짜 종류</label><select id="eKind"></select>
     <label for="eQty" id="eQtyL"></label><input id="eQty" maxlength="20" autocomplete="off">
-    <label for="eZone">구역</label><select id="eZone"></select>
+    <label>구역</label><div id="eZone" class="segs" role="group" aria-label="구역"></div>
     <div class="actions stick"><button type="button" class="ghost" id="eCancel">취소</button><button type="submit">저장</button></div>
     <div class="actions"><button type="button" class="danger" id="eDel">삭제</button></div>
   </form>
@@ -121,7 +128,7 @@ dialog .note{background:var(--bg)}
 <dialog id="mDlg">
   <form id="mForm">
     <h2>냉장고에 넣기</h2>
-    <label for="mZone">구역</label><select id="mZone"></select>
+    <label>구역</label><div id="mZone" class="segs" role="group" aria-label="구역"></div>
     <div id="mRows"></div><div class="err" id="mErr"></div>
     <div class="actions"><button type="button" class="ghost" id="mCancel">취소</button><button type="submit">넣기</button></div>
   </form>
@@ -191,6 +198,39 @@ function status(it, now = new Date()) {
 const byUrgency = (a, b) => status(a).key - status(b).key || a.name.localeCompare(b.name, "ko");
 const fmtDate = d => d ? d.slice(2).replace(/-/g, "") : "";   // 2026-10-20 → 261020
 
+// 자동완성: words = { 이름: 쓴 횟수 } (Object.create(null)).
+// 초성 검색: "ㄷ" → 대파·두부, "ㄷㅍ" → 대파. 입력 중인 마지막 글자 "다"(받침 전)도 "닭"에 맞는다.
+const CHO = "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
+const syl = ch => { const c = ch.charCodeAt(0) - 0xac00; return c >= 0 && c <= 11171 ? c : -1; };   // 한글 음절 번호(아니면 -1)
+function charMatch(q, w, last) {
+  if (q === w) return true;
+  const c = syl(w);
+  if (c < 0) return false;
+  if (CHO.includes(q)) return CHO[Math.floor(c / 588)] === q;
+  const d = syl(q);
+  return last && d >= 0 && d % 28 === 0 && Math.floor(d / 28) === Math.floor(c / 28);   // 받침 없는 입력 중 글자 = 초성·중성 같음
+}
+function matchPos(w, q) {   // q 가 w 의 몇 번째 글자부터 맞는지(없으면 -1)
+  const wa = [...w], qa = [...q];
+  for (let i = 0; i + qa.length <= wa.length; i++)
+    if (qa.every((ch, j) => charMatch(ch, wa[i + j], j === qa.length - 1))) return i;
+  return -1;
+}
+// 맞는 이름을 앞글자부터 맞는 것 → 중간에 맞는 것 순, 같은 무리는 많이 쓴 순. q 와 똑같은 이름·except 는 뺀다
+function suggest(words, q = "", limit = 12, except = []) {
+  q = q.trim().toLowerCase();
+  return Object.keys(words).map(w => [w, q ? matchPos(w.toLowerCase(), q) : 0])
+    .filter(([w, p]) => p >= 0 && w.toLowerCase() !== q && !except.includes(w))
+    .sort((a, b) => (a[1] > 0) - (b[1] > 0) || words[b[0]] - words[a[0]] || a[0].localeCompare(b[0], "ko"))
+    .slice(0, limit).map(([w]) => w);
+}
+function bumpWord(words, name, max = 200) {   // 횟수 +1, max 개를 넘으면 가장 적게 쓴 것부터 버린다(방금 쓴 이름은 남김)
+  words[name] = (words[name] || 0) + 1;
+  const extra = Object.keys(words).length - max;
+  if (extra > 0) Object.keys(words).filter(k => k !== name).sort((a, b) => words[a] - words[b]).slice(0, extra).forEach(k => delete words[k]);
+  return words;
+}
+
 // 공유용 암호화(WebCrypto). 키는 코드에 없고 사용자 폰에서 새로 만든다. 서버에는 암호문만 간다.
 const bytesToB64u = b => { let s = ""; for (const v of new Uint8Array(b)) s += String.fromCharCode(v); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); };
 const b64uToBytes = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), c => c.charCodeAt(0));
@@ -235,7 +275,7 @@ const store = {
 };
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const qty = v => String(v ?? "").trim().slice(0, 20) || "1";
-const MAX_ZONES = 20, MAX_ROWS = 300;   // 재료·장보기 각각. 한글 40자 이름이 꽉 차도 암호문이 서버 한도(256KB, supabase.sql)를 넘지 않는 크기
+const MAX_ZONES = 20, MAX_ROWS = 300, MAX_WORDS = 200;   // 재료·장보기 각각. 한글 40자 이름이 꽉 차도 암호문이 서버 한도(256KB, supabase.sql)를 넘지 않는 크기
 
 function normalize(d) {
   const o = { labels: {}, zones: [], items: [], shop: [] };
@@ -253,6 +293,11 @@ function normalize(d) {
     if (!s || typeof s.name !== "string" || !s.name.trim() || o.shop.length >= MAX_ROWS) continue;
     o.shop.push({ id: String(s.id || uid()), name: s.name.slice(0, 40), qty: qty(s.qty), done: !!s.done });
   }
+  o.words = Object.create(null);   // 자동완성(이 냉장고에서 쓴 이름과 횟수). __proto__ 같은 이름도 안전하게
+  Object.entries(d.words && typeof d.words === "object" ? d.words : {})
+    .filter(([k, n]) => k.trim() && k.length <= 40 && Number.isInteger(n) && n > 0)
+    .sort((a, b) => b[1] - a[1]).slice(0, MAX_WORDS).forEach(([k, n]) => { o.words[k] = Math.min(n, 1e6); });
+  if (!d.words) [...o.items, ...o.shop].forEach(i => bumpWord(o.words, i.name, MAX_WORDS));   // 자동완성 이전 데이터: 지금 있는 이름으로 시작
   return o;
 }
 
@@ -349,7 +394,15 @@ async function joinRoom(text) {   // 키 파일로 참여: 서버 내용으로 �
 function leaveRoom() { sync = null; synced = ""; dirty = false; clearTimeout(pushTimer); store.set("fridgey.sync", ""); syncStatus = ""; }
 const zoneName = id => data.zones.find(z => z.id === id)?.name ?? "";
 const kindLabel = k => k === "cook" ? L("fCook") : L("fDate");
-const fillZones = (sel, cur) => { sel.replaceChildren(...data.zones.map(z => h("option", { value: z.id, textContent: z.name || "구역" }))); sel.value = data.zones.some(z => z.id === cur) ? cur : data.zones[0].id; };
+// 구역 선택 = 구역마다 버튼 하나(한 번 누르면 선택). 고른 값은 box.value 에 두고 box.onchange 를 부른다(예전 select 와 같은 사용법)
+const fillZones = (box, cur) => {
+  box.value = data.zones.some(z => z.id === cur) ? cur : data.zones[0].id;
+  box.replaceChildren(...data.zones.map(z => h("button", { type: "button", className: "seg" + (z.id === box.value ? " on" : ""), textContent: z.name || "구역", "aria-pressed": String(z.id === box.value), onclick() {
+    box.value = z.id;
+    for (const b of box.children) { b.classList.toggle("on", b === this); b.setAttribute("aria-pressed", String(b === this)); }
+    box.onchange?.();
+  } })));
+};
 function download(name, text) {
   const a = h("a", { href: URL.createObjectURL(new Blob([text], { type: "application/json" })), download: name });
   document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
@@ -377,12 +430,13 @@ const fb = {
   name: h("input", { maxLength: 40, autocomplete: "off", enterKeyHint: "next" }),
   date: h("input", { inputMode: "numeric", maxLength: 12, autocomplete: "off", enterKeyHint: "done" }),
   kind: h("button", { type: "button", className: "chip", title: "눌러서 바꾸기" }),
-  zone: h("select", { "aria-label": "구역" }),
+  zone: h("div", { className: "segs", role: "group", "aria-label": "구역" }),
   add: h("button", { type: "submit" }),
   msg: h("div", { className: "meta msg", role: "status" }),
 };
 fb.root = h("form", { className: "card entry" },
   h("div", { className: "row" }, h("div", { className: "grow" }, fb.name), fb.add),
+  fb.sugg = h("div", { className: "sugg hide", "aria-label": "자주 쓰는 이름 (누르면 바로 추가)" }),
   h("div", { className: "row", style: "margin-top:8px;flex-wrap:wrap" }, h("div", { style: "flex:1 1 120px;min-width:0" }, fb.date), fb.kind, h("div", { style: "flex:1 1 100%" }, fb.zone)),
   fb.msg);
 fb.hint = h("div", { className: "note" });
@@ -408,12 +462,20 @@ fb.root.onsubmit = e => {
   if (date === null) { fb.date.classList.add("bad"); fb.msg.textContent = "날짜를 확인해 주세요. 예: 261020 (26년 10월 20일)"; return fb.date.focus(); }
   if (data.items.length >= MAX_ROWS) { fb.msg.textContent = `재료는 최대 ${MAX_ROWS}개까지예요. 다 먹은 것을 정리해 주세요.`; return; }
   data.items.push({ id: uid(), name, qty: "1", zone: fb.zone.value, date, kind });
+  bumpWord(data.words, name, MAX_WORDS);
   save();
   fb.name.value = ""; fb.date.value = ""; fb.msg.textContent = `✓ ${name}${date ? ` · ${fmtDate(date)} (${status({ date, kind }).label})` : ""} → ${zoneName(fb.zone.value)}`;
-  renderFridgeList(); fb.name.focus();
+  renderFridgeList(); renderSugg(fb); fb.name.focus();
 };
+fb.name.oninput = () => renderSugg(fb);
+// 자주 쓴 이름 칩: 따로 검색창 없이 기존 입력칸에 칠 때만 뜬다(빈 칸이면 숨김). 누르면 그 이름으로 바로 추가(추가 버튼을 누른 것과 같음)
+function renderSugg(bar, except = []) {
+  const list = bar.name.value.trim() ? suggest(data.words, bar.name.value, 6, except) : [];
+  bar.sugg.replaceChildren(...list.map(w => h("button", { type: "button", className: "chip", textContent: w, onclick() { bar.name.value = w; bar.add.click(); } })));
+  bar.sugg.classList.toggle("hide", !list.length);
+}
 function fridgeView() {
-  renderFridgeList();
+  renderFridgeList(); renderSugg(fb);
   return h("div", {}, fb.root, fb.hint, fb.listBox);
 }
 function renderFridgeList() {
@@ -448,10 +510,14 @@ shopBar.root.onsubmit = e => {
   if (!name) return shopBar.name.focus();
   if (data.shop.length >= MAX_ROWS) return alert(`장보기 목록은 최대 ${MAX_ROWS}개까지예요. 산 것을 정리해 주세요.`);
   data.shop.push({ id: uid(), name, qty: qty(shopBar.qty.value), done: false });
-  save(); shopBar.name.value = ""; shopBar.qty.value = "1"; renderShopList(); shopBar.name.focus();
+  bumpWord(data.words, name, MAX_WORDS);
+  save(); shopBar.name.value = ""; shopBar.qty.value = "1"; renderShopList(); shopSugg(); shopBar.name.focus();
 };
 shopBar.qty.onfocus = () => { shopBar.qty.select(); reveal(shopBar.qty); };
-function shopView() { renderShopList(); return h("div", {}, shopBar.root, shopBar.listBox); }
+shopBar.sugg = h("div", { className: "sugg hide", "aria-label": "자주 사는 것 (누르면 바로 추가)" });
+const shopSugg = () => renderSugg(shopBar, data.shop.filter(s => !s.done).map(s => s.name));   // 이미 목록에 있는 건 빼고
+shopBar.name.oninput = shopSugg;
+function shopView() { renderShopList(); shopSugg(); return h("div", {}, shopBar.root, shopBar.sugg, shopBar.listBox); }
 function renderShopList() {
   const done = data.shop.filter(s => s.done);
   shopBar.listBox.replaceChildren(
@@ -518,6 +584,7 @@ $("mForm").onsubmit = e => {
 $("mCancel").onclick = () => $("mDlg").close();
 
 // ---- 설정 ----
+let wordsOpen = false;
 function openSettings() { renderSettings(); $("sDlg").showModal(); }
 const BAD_FILE = "이 파일은 Fridgey에서 내보낸 데이터가 아닌 것 같아요. '데이터 내보내기'로 저장한 .json 파일을 골라 주세요.";
 function renderSettings() {
@@ -559,6 +626,12 @@ function renderSettings() {
       h("div", { textContent: "홈 화면에 추가하면 앱처럼 바로 열려요: 공유 → 홈 화면에 추가", style: "margin-top:8px" })),
     h("button", { className: "ghost", textContent: "데이터 내보내기 (파일 저장)", style: "width:100%", onclick: () => download("fridgey-data.json", JSON.stringify(data, null, 2)) }),
     h("button", { className: "ghost", textContent: "데이터 불러오기", style: "width:100%;margin-top:8px", onclick: () => file.click() }), file,
+    h("details", { style: "margin-top:18px", open: wordsOpen, ontoggle() { wordsOpen = this.open; } },
+      h("summary", { textContent: `자동완성 단어 (${Object.keys(data.words).length}개) — 잘못 들어간 건 ✕로 지워요`, style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--main);padding:10px 0" }),
+      Object.keys(data.words).length ? Object.keys(data.words).sort((a, b) => data.words[b] - data.words[a]).map(w => h("div", { className: "row", style: "margin-bottom:6px" },
+        h("div", { className: "grow name", textContent: `${w} · ${data.words[w]}번` }),
+        h("button", { className: "ghost x", textContent: "✕", "aria-label": `${w} 자동완성에서 지우기`, style: "padding:8px 12px;min-width:44px", onclick() { delete data.words[w]; save(); renderSettings(); } })))
+        : h("div", { className: "meta", textContent: "재료나 장보기를 추가하면 여기에 쌓여요." })),
     h("details", { style: "margin-top:18px" },
       h("summary", { textContent: "이름 바꾸기 — 비워 두면 기본 이름이에요", style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--main);padding:10px 0" }),
       Object.keys(DEFAULT_LABELS).map(k => h("div", {},
