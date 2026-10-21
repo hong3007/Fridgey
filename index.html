@@ -127,6 +127,7 @@ main>div>.sugg{margin:-2px 0 8px}
 .gate .big{width:100%;min-height:60px;font-size:19px;margin-top:20px}
 .gate .ghost{width:100%;margin-top:12px}
 button.done{flex:none;padding:3px 10px;min-height:30px;font-size:13px;border-width:1px;border-radius:8px}
+.pill{display:inline-block;margin-top:4px;padding:2px 10px;border-radius:999px;font-size:12px;line-height:1.5;background:var(--bg);color:var(--sub);border:1px solid var(--line)}
 .hide{display:none!important}
 .err{font-size:14px;color:var(--red);margin-top:4px}
 .err:empty{display:none}
@@ -151,13 +152,13 @@ button.done{flex:none;padding:3px 10px;min-height:30px;font-size:13px;border-wid
 <!-- 재료 수정 -->
 <dialog id="eDlg">
   <form id="eForm">
-    <h2>수정</h2>
+    <h2 id="eTitle">수정</h2>
     <label for="eName" id="eNameL"></label><input id="eName" required maxlength="40" autocomplete="off">
     <label for="eDate" id="eDateL"></label><input id="eDate" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="예: 261020"><div class="err" id="eErr"></div>
-    <label for="eKind">날짜 종류</label><select id="eKind"></select>
+    <label for="eKind" id="eKindL">날짜 종류</label><select id="eKind"></select>
     <label for="eQty" id="eQtyL"></label><input id="eQty" maxlength="20" autocomplete="off">
-    <label>구역</label><div id="eZone" class="segs" role="group" aria-label="구역"></div>
-    <div class="actions stick"><button type="button" class="ghost" id="eCancel">취소</button><button type="submit">저장</button></div>
+    <label id="eZoneL">구역</label><div id="eZone" class="segs" role="group" aria-label="구역"></div>
+    <div class="actions stick"><button type="button" class="ghost" id="eCancel">취소</button><button type="submit" id="eSave">저장</button></div>
     <div class="actions"><button type="button" class="danger" id="eDel">삭제</button></div>
   </form>
 </dialog>
@@ -165,16 +166,16 @@ button.done{flex:none;padding:3px 10px;min-height:30px;font-size:13px;border-wid
 <!-- 장보기 → 냉장고 -->
 <dialog id="mDlg">
   <form id="mForm">
-    <h2>냉장고에 넣기</h2>
-    <label>구역</label><div id="mZone" class="segs" role="group" aria-label="구역"></div>
+    <h2 id="mTitle">냉장고에 넣기</h2>
+    <label id="mZoneL">구역</label><div id="mZone" class="segs" role="group" aria-label="구역"></div>
     <div id="mRows"></div><div class="err" id="mErr"></div>
-    <div class="actions"><button type="button" class="ghost" id="mCancel">취소</button><button type="submit">넣기</button></div>
+    <div class="actions"><button type="button" class="ghost" id="mCancel">취소</button><button type="submit" id="mSave">넣기</button></div>
   </form>
 </dialog>
 
 <!-- 설정 -->
 <dialog id="sDlg">
-  <h2>설정</h2>
+  <h2 id="sTitle">설정</h2>
   <div id="sBody"></div>
   <div class="actions stick"><button type="button" id="sClose">닫기</button></div>
 </dialog>
@@ -234,14 +235,14 @@ function daysLeft(date, now = new Date()) {
 }
 
 // 표시 문구·단계(level)·정렬키(key, 작을수록 급함). kind: "exp"=유통기한, "cook"=기준일(그날부터 며칠 지났나, 4일 지나면 위험).
-function status(it, now = new Date()) {
-  const n = daysLeft(it.date, now);
+function status(it, now = new Date(), lang = "ko") {   // lang: "ko" | "en" (표시 문구만 다름)
+  const n = daysLeft(it.date, now), en = lang === "en";
   if (n === null) return { label: "", level: "none", key: 1e9 };
   if (it.kind === "cook") {
     const e = Math.max(0, -n);
-    return { label: e === 0 ? "오늘" : `${e}일 경과`, level: e >= 4 ? "red" : e >= 3 ? "orange" : "ok", key: 4 - e };
+    return { label: e === 0 ? (en ? "Today" : "오늘") : en ? `${e}d ago` : `${e}일 경과`, level: e >= 4 ? "red" : e >= 3 ? "orange" : "ok", key: 4 - e };
   }
-  return { label: n < 0 ? `${-n}일 지남` : n === 0 ? "오늘까지" : `D-${n}`, level: n < 0 ? "expired" : n <= 3 ? "red" : n <= 7 ? "orange" : "ok", key: n };
+  return { label: n < 0 ? (en ? `${-n}d over` : `${-n}일 지남`) : n === 0 ? (en ? "Today" : "오늘까지") : en ? `${n}d left` : `D-${n}`, level: n < 0 ? "expired" : n <= 3 ? "red" : n <= 7 ? "orange" : "ok", key: n };
 }
 const byUrgency = (a, b) => status(a).key - status(b).key || a.name.localeCompare(b.name, "ko");
 const fmtDate = d => d ? d.slice(2).replace(/-/g, "") : "";   // 2026-10-20 → 261020
@@ -313,9 +314,142 @@ function parseKeyFile(text) {
 // </core>
 
 // ---- 데이터 ----
-const DEFAULT_LABELS = { title: "Fridgey", tabFridge: "냉장고", tabShop: "장보기", fName: "음식명", fDate: "유통기한", fCook: "기준일", fQty: "수량", addBtn: "추가", tabBin: "음쓰통", doneBtn: "처리" };
-const LABEL_HELP = { title: "앱 이름", tabFridge: "첫 번째 탭 이름", tabShop: "두 번째 탭 이름", fName: "음식 입력칸 이름", fDate: "유통기한 입력칸 이름", fCook: "기준일 입력칸 이름", fQty: "수량 입력칸 이름", addBtn: "추가 버튼 이름", tabBin: "음쓰통 이름 (설정 안)", doneBtn: "처리 버튼 이름" };
-const DEFAULT_ZONES = ["1층", "2층", "3층"];
+// <i18n>
+// ---- 언어: 기기마다 따로(공유 안 함). 처음엔 폰 언어(한국어면 ko, 아니면 en) ----
+let LANG = (() => { try { const v = localStorage.getItem("fridgey.lang"); if (v === "ko" || v === "en") return v; } catch {} return /^ko/i.test(globalThis.navigator?.language || "") ? "ko" : "en"; })();
+const DEF = {   // 기본 이름(사용자가 설정에서 바꾼 이름이 있으면 그게 우선)
+  ko: { title: "Fridgey", tabFridge: "냉장고", tabShop: "장보기", fName: "음식명", fDate: "유통기한", fCook: "기준일", fQty: "수량", addBtn: "추가", tabBin: "음쓰통", doneBtn: "처리" },
+  en: { title: "Fridgey", tabFridge: "Fridge", tabShop: "Shopping", fName: "Food", fDate: "Expires", fCook: "Since", fQty: "Qty", addBtn: "Add", tabBin: "Bin", doneBtn: "Done" },
+};
+const DEFAULT_LABELS = DEF.ko;   // 이름 칸 목록(normalize 용)
+const T = {
+  ko: {
+    help: { title: "앱 이름", tabFridge: "첫 번째 탭 이름", tabShop: "두 번째 탭 이름", fName: "음식 입력칸 이름", fDate: "유통기한 입력칸 이름", fCook: "기준일 입력칸 이름", fQty: "수량 입력칸 이름", addBtn: "추가 버튼 이름", tabBin: "음쓰통 이름 (설정 안)", doneBtn: "처리 버튼 이름" },
+    zones: ["1층", "2층", "3층"], zoneNew: n => `${n}층`, zone: "구역",
+    skinNames: { mint: "민트", pink: "핑크", white: "화이트", purple: "퍼플", blue: "블루" },
+    settings: "설정", edit: "수정", dateKind: "날짜 종류", cancel: "취소", save: "저장", close: "닫기",
+    moveTitle: tf => `${tf}에 넣기`, moveDo: "넣기", guideTitle: "Fridgey 사용법", eDatePh: "예: 261020",
+    corrupt: "저장된 데이터를 읽지 못해 새로 시작했어요. 원본은 이 기기에 따로 남겨 뒀어요.",
+    resetData: "저장된 데이터에 문제가 있어 새로 시작했어요.",
+    saveFail: "이 기기에 저장하지 못했어요. 설정에서 데이터를 내보내 백업해 두세요.",
+    conflict: "다른 기기에서 먼저 바뀌어서 최신 내용으로 불러왔어요. 방금 한 변경이 안 보이면 다시 입력해 주세요.",
+    synced: tm => `동기화됨 ${tm}`, offline: "연결되지 않아요. 연결되면 다시 맞춰요.",
+    noServer: "서버에 연결하지 못했어요. 잠시 뒤 다시 해 주세요.", noRoom: "이 키로 저장된 냉장고를 찾지 못했어요.",
+    badKeyFile: "Fridgey 키 파일이 아니에요.", wrongKey: "키가 맞지 않거나 데이터를 읽을 수 없어요.",
+    joinConfirm: (i, s) => `이 기기의 데이터를 공유 냉장고(재료 ${i}개, 장보기 ${s}개)로 바꿔요. 계속할까요?`,
+    shareTitle: "Fridgey 키 파일",
+    gateTitle: "냉장고 열쇠를 꼭 보관하세요",
+    gate1: "이 냉장고는 자동으로 암호화돼서 서버에 백업돼요. 여는 열쇠는 '키 파일' 하나뿐이에요.",
+    gate2a: "쿠키·사이트 데이터를 지우거나 폰을 바꾸면 ", gate2b: "이 키 파일로만 되살릴 수 있고, 잃어버리면 아무도 복구할 수 없어요.",
+    gate3: "카톡 '나에게 보내기'로 보내 두면 가장 편해요. 함께 쓸 사람에게도 이 파일을 보내 주세요.",
+    saveKey: "키 파일 보관하기", gateRetry: "보관이 끝나야 다음으로 넘어가요. 다시 눌러 주세요.", haveKey: "이미 받은 키 파일이 있어요 (참여하기)",
+    guideNever: "시작할 때 사용법 안내: 다시 보지 않음", guideUntil: (m, d) => `시작할 때 사용법 안내: ${m}월 ${d}일까지 숨김`, guideOn: "시작할 때 사용법 안내: 보임",
+    g1: (f, a) => `① ${f}을(를) 쓰고 날짜(예: 261020)를 넣은 뒤 ${a}. 글자를 치면 자주 쓴 이름이 떠서 누르면 바로 들어가요.`,
+    g2: "② 이 냉장고는 자동으로 암호화돼서 서버에 백업돼요. 여는 열쇠는 '키 파일' 하나뿐이라 서버 주인도 내용을 못 봐요.",
+    g3: "③ 키 파일을 카톡 '나에게 보내기' 등으로 꼭 보관하세요. 쿠키·사이트 데이터를 지우거나 폰을 바꿔도 ⚙ → '키 파일로 참여하기'로 그대로 되살릴 수 있어요.",
+    g4: "④ 함께 쓰려면 키 파일을 보내 주세요. 받은 사람은 ⚙ → '키 파일로 참여하기'. 이미 받은 키 파일이 있다면 지금 그렇게 하면 돼요.",
+    g5: "⑤ 키 파일을 잃어버리면 아무도(만든 사람도) 복구할 수 없어요.",
+    noBackup: "아직 서버 백업이 켜져 있지 않아요. ⚙ → '공유 냉장고 만들기'로 시작할 수 있어요.",
+    hide7: "7일간 보지 않기", hideNever: "다시 보지 않기",
+    tapToSwitch: "눌러서 바꾸기", suggFridge: "자주 쓰는 이름 (누르면 바로 추가)", suggShop: "자주 사는 것 (누르면 바로 추가)",
+    namePh: f => `${f} (예: 우유)`, datePh: k => `${k} 예: 261020`,
+    badDate: "날짜를 확인해 주세요. 예: 261020 (26년 10월 20일)", badDateShort: "날짜를 확인해 주세요. 예: 261020",
+    maxItems: n => `재료는 최대 ${n}개까지예요. 다 먹은 것을 정리해 주세요.`, maxShop: n => `장보기 목록은 최대 ${n}개까지예요. 산 것을 정리해 주세요.`,
+    hint: (f, a, shared) => `${f}을(를) 쓰고 ${a}을(를) 누르면 급한 순으로 정리돼요. 날짜는 비워도 돼요. 구역 이름·층 수는 오른쪽 위 ⚙에서 바꿀 수 있어요. ${shared ? "공유 냉장고로 함께 쓰는 중이에요." : "데이터는 이 폰에만 저장돼요."}`,
+    editAria: n => `${n} 수정`, doneAria: (n, d, b) => `${n} ${d} (${b}으로)`, empty: "비어 있음", delAria: n => `${n} 삭제`,
+    shopEmpty: tf => `사려는 것을 위 칸에 적어 보세요. 사온 뒤 체크하면 ${tf}에 바로 넣을 수 있어요.`,
+    moveBtn: (n, tf) => `체크한 ${n}개를 ${tf}에 넣기`, movePh: f => `${f} 예: 261020 (비워도 돼요)`,
+    processed: (n, b) => `‘${n}’ ${b}으로(⚙에서 볼 수 있어요) · `, undo: "되돌리기",
+    binSummary: (b, n, d) => `${b} (${n}개) — ${d}한 재료, 되돌리거나 지울 수 있어요`, binKeep: n => `최근 ${n}개까지 보관돼요.`,
+    binDate: (m, d, done) => `${m}/${d} ${done}`, restore: "되돌리기", restoreAria: n => `${n} 되돌리기`,
+    erase: "지우기", eraseAria: n => `${n} 완전히 지우기`, eraseConfirm: n => `‘${n}’을(를) 완전히 지울까요? 되돌릴 수 없어요.`,
+    binEmpty: (tf, d) => `아직 비어 있어요. ${tf}에서 ${d}을 누르면 여기로 와요.`,
+    badFile: "이 파일은 Fridgey에서 내보낸 데이터가 아닌 것 같아요. '데이터 내보내기'로 저장한 .json 파일을 골라 주세요.",
+    importConfirm: (i, s) => `지금 데이터를 파일 내용으로 바꿔요. (재료 ${i}개, 장보기 ${s}개) 계속할까요?`,
+    hZones: "구역 (층)", zoneNameAria: "구역 이름", zoneDelAria: n => `${n} 구역 삭제`, addZone: "＋ 구역 추가",
+    hLang: "언어 (이 기기만)", hTheme: "테마 (함께 쓰는 사람과 공유돼요)", themeAria: "테마",
+    hShare: "공유 (가족과 함께 쓰기)", sharing: s => `공유 중이에요. ${s || "곧 동기화돼요."}`,
+    saveKeyLong: "키 파일 보관하기 (카톡 나에게 보내기 등)", leave: "이 기기에서 공유 끊기",
+    leaveConfirm: "이 기기에서 공유를 끊어요. (데이터는 이 기기에 남아요.) 키 파일이 없으면 다시 참여할 수 없어요. 계속할까요?",
+    shareNote: "키 파일을 가진 사람끼리 같은 냉장고를 함께 써요. 데이터는 키로 암호화돼서 서버에는 읽을 수 없는 글자만 저장돼요. 키 파일을 잃어버리면 복구할 수 없어요.",
+    createShared: "공유 냉장고 만들기", joinKey: "키 파일로 참여하기",
+    hData: "데이터", data1: shared => shared ? "① 공유 중이라 데이터가 암호화돼서 서버에도 저장돼요. 이 기기에도 복사본이 있어요." : "① 데이터는 이 기기 브라우저에만 저장돼요. 사이트 데이터를 지우면 사라져요.",
+    data2: "② 가족과 나누려면 '내보내기'로 만든 파일을 카톡·메일로 보내고, 받는 사람이 '불러오기'를 해요. (받는 사람 기기의 기존 데이터는 바뀌어요.)",
+    data3: "③ 가끔 내보내기로 백업해 두세요.", homeScreen: "홈 화면에 추가하면 앱처럼 바로 열려요: 공유 → 홈 화면에 추가",
+    export: "데이터 내보내기 (파일 저장)", import: "데이터 불러오기",
+    hHelp: "도움말", showGuide: "설명 보기", reshow: "시작할 때 다시 보이기",
+    wordsSummary: n => `자동완성 단어 (${n}개) — 잘못 들어간 건 ✕로 지워요`, wordCount: (w, n) => `${w} · ${n}번`,
+    wordDelAria: w => `${w} 자동완성에서 지우기`, wordsEmpty: "재료나 장보기를 추가하면 여기에 쌓여요.",
+    renameSummary: "이름 바꾸기 — 비워 두면 기본 이름이에요",
+    zoneMin: "구역은 최소 1개 있어야 해요.", zoneDelConfirm: (z, n) => n ? `"${z}"의 재료 ${n}개는 첫 번째 구역으로 옮겨져요. 삭제할까요?` : `"${z}"을(를) 삭제할까요?`,
+    oldBrowser: "최신 브라우저에서 열어 주세요.",
+    inFridge: (name, n, zones) => { const c = name.trim().slice(-1).charCodeAt(0) - 0xac00; return `이미 ${name}${c < 0 || c > 11171 ? "이(가)" : c % 28 ? "이" : "가"} ${n}개 ${zones}에 있습니다`; },
+  },
+  en: {
+    help: { title: "App name", tabFridge: "First tab name", tabShop: "Second tab name", fName: "Food field name", fDate: "Expiry field name", fCook: "Since-date field name", fQty: "Qty field name", addBtn: "Add button name", tabBin: "Bin name (in Settings)", doneBtn: "Done button name" },
+    zones: ["Shelf 1", "Shelf 2", "Shelf 3"], zoneNew: n => `Shelf ${n}`, zone: "Section",
+    skinNames: { mint: "Mint", pink: "Pink", white: "White", purple: "Purple", blue: "Blue" },
+    settings: "Settings", edit: "Edit", dateKind: "Date type", cancel: "Cancel", save: "Save", close: "Close",
+    moveTitle: tf => `Move to ${tf}`, moveDo: "Move", guideTitle: "How to use Fridgey", eDatePh: "e.g. 261020",
+    corrupt: "Couldn't read the saved data, so the app started fresh. The original was kept on this device.",
+    resetData: "Saved data had a problem, so the app started fresh.",
+    saveFail: "Couldn't save on this device. Export your data from Settings as a backup.",
+    conflict: "This fridge was changed on another device first, so the latest version was loaded. If your last change is missing, please enter it again.",
+    synced: tm => `Synced ${tm}`, offline: "Offline. It will sync when you're back online.",
+    noServer: "Couldn't reach the server. Please try again shortly.", noRoom: "No fridge was found for this key.",
+    badKeyFile: "This is not a Fridgey key file.", wrongKey: "Wrong key, or the data couldn't be read.",
+    joinConfirm: (i, s) => `This device's data will be replaced with the shared fridge (${i} items, ${s} shopping). Continue?`,
+    shareTitle: "Fridgey key file",
+    gateTitle: "Keep your fridge key safe",
+    gate1: "This fridge is encrypted and backed up to the server automatically. The only key that opens it is your key file.",
+    gate2a: "If you clear cookies/site data or change phones, ", gate2b: "only this key file can bring it back. If you lose it, no one can recover it.",
+    gate3: "Sending it to yourself in a messenger is the easiest. Send the file to anyone you share the fridge with, too.",
+    saveKey: "Save key file", gateRetry: "Please save it to continue. Tap again.", haveKey: "I already have a key file (join)",
+    guideNever: "Guide at start: never show", guideUntil: (m, d) => `Guide at start: hidden until ${m}/${d}`, guideOn: "Guide at start: shown",
+    g1: (f, a) => `① Type a ${f} and a date (e.g. 261020 = YYMMDD), then tap ${a}. As you type, names you often use pop up; tap one to add it right away.`,
+    g2: "② This fridge is encrypted and backed up to the server automatically. The only key is your key file, so even the server owner can't read it.",
+    g3: "③ Keep the key file somewhere safe, e.g. send it to yourself in a messenger. If you clear site data or change phones, ⚙ → 'Join with key file' brings everything back.",
+    g4: "④ To share, send the key file. The other person opens ⚙ → 'Join with key file'. If you already received a key file, do that now.",
+    g5: "⑤ If the key file is lost, no one (not even its creator) can recover the fridge.",
+    noBackup: "Server backup isn't on yet. Start it from ⚙ → 'Create shared fridge'.",
+    hide7: "Hide for 7 days", hideNever: "Don't show again",
+    tapToSwitch: "Tap to switch", suggFridge: "Frequent names (tap to add)", suggShop: "Frequent buys (tap to add)",
+    namePh: f => `${f} (e.g. milk)`, datePh: k => `${k} e.g. 261020`,
+    badDate: "Please check the date. e.g. 261020 (YYMMDD = 2026-10-20)", badDateShort: "Please check the date. e.g. 261020 (YYMMDD)",
+    maxItems: n => `Up to ${n} items. Please clear out what you've finished.`, maxShop: n => `Up to ${n} shopping items. Please clear out what you've bought.`,
+    hint: (f, a, shared) => `Type a ${f} and tap ${a}; items are sorted by what's most urgent. The date is optional. Rename sections or change how many there are in ⚙ (top right). ${shared ? "You're sharing this fridge." : "Data is stored only on this phone."}`,
+    editAria: n => `Edit ${n}`, doneAria: (n, d, b) => `${d}: ${n} (to ${b})`, empty: "Empty", delAria: n => `Delete ${n}`,
+    shopEmpty: tf => `Write what you need above. Check items once bought to move them into the ${tf}.`,
+    moveBtn: (n, tf) => `Move ${n} checked to ${tf}`, movePh: f => `${f} e.g. 261020 (optional)`,
+    processed: (n, b) => `‘${n}’ moved to ${b} (see ⚙) · `, undo: "Undo",
+    binSummary: (b, n) => `${b} (${n}) — finished items you can restore or delete`, binKeep: n => `Keeps the latest ${n}.`,
+    binDate: (m, d, done) => `${done} ${m}/${d}`, restore: "Restore", restoreAria: n => `Restore ${n}`,
+    erase: "Delete", eraseAria: n => `Delete ${n} permanently`, eraseConfirm: n => `Delete ‘${n}’ permanently? This can't be undone.`,
+    binEmpty: (tf, d) => `Empty for now. Tap ${d} in the ${tf} to send items here.`,
+    badFile: "This doesn't look like data exported from Fridgey. Please choose a .json file saved with 'Export data'.",
+    importConfirm: (i, s) => `Replace the current data with this file? (${i} items, ${s} shopping)`,
+    hZones: "Sections (shelves)", zoneNameAria: "Section name", zoneDelAria: n => `Delete section ${n}`, addZone: "＋ Add section",
+    hLang: "Language (this device only)", hTheme: "Theme (shared with everyone using this fridge)", themeAria: "Theme",
+    hShare: "Sharing (use with family)", sharing: s => `Sharing. ${s || "Will sync shortly."}`,
+    saveKeyLong: "Save key file (e.g. send it to yourself)", leave: "Stop sharing on this device",
+    leaveConfirm: "Stop sharing on this device? (Your data stays here.) Without the key file you can't rejoin.",
+    shareNote: "People with the key file share the same fridge. Data is encrypted with the key, so the server only stores unreadable text. If you lose the key file, it can't be recovered.",
+    createShared: "Create shared fridge", joinKey: "Join with key file",
+    hData: "Data", data1: shared => shared ? "① While sharing, your data is encrypted and also stored on the server. A copy stays on this device." : "① Data is stored only in this device's browser. Clearing site data deletes it.",
+    data2: "② To share by file, send an exported file by messenger or email and have the other person use 'Import data'. (It replaces their current data.)",
+    data3: "③ Export a backup now and then.", homeScreen: "Add it to your home screen to open it like an app: Share → Add to Home Screen",
+    export: "Export data (save file)", import: "Import data",
+    hHelp: "Help", showGuide: "Show guide", reshow: "Show guide at start again",
+    wordsSummary: n => `Autocomplete words (${n}) — remove typos with ✕`, wordCount: (w, n) => `${w} · ${n}×`,
+    wordDelAria: w => `Remove ${w} from autocomplete`, wordsEmpty: "Words appear here as you add items or shopping.",
+    renameSummary: "Rename — leave blank for the default",
+    zoneMin: "You need at least one section.", zoneDelConfirm: (z, n) => n ? `${n} items in "${z}" will move to the first section. Delete it?` : `Delete "${z}"?`,
+    oldBrowser: "Please open this in an up-to-date browser.",
+    inFridge: (name, n, zones) => `Already in the fridge: ${n} in ${zones}`,
+  },
+};
+const t = (k, ...a) => { const v = T[LANG]?.[k] ?? T.ko[k]; return typeof v === "function" ? v(...a) : v; };
+// </i18n>
 const LS = "fridgey.data";
 const store = {
   get: k => { try { return localStorage.getItem(k); } catch { return null; } },
@@ -330,7 +464,7 @@ function normalize(d) {
   d = d && typeof d === "object" ? d : {};
   for (const k in DEFAULT_LABELS) if (typeof d.labels?.[k] === "string") o.labels[k] = d.labels[k].slice(0, 20);
   for (const z of Array.isArray(d.zones) ? d.zones : []) if (z && z.id && typeof z.name === "string" && o.zones.length < MAX_ZONES && !o.zones.some(x => x.id === String(z.id))) o.zones.push({ id: String(z.id), name: z.name.slice(0, 20) });
-  if (!o.zones.length) o.zones = DEFAULT_ZONES.map((name, i) => ({ id: "z" + (i + 1), name }));
+  if (!o.zones.length) o.zones = t("zones").map((name, i) => ({ id: "z" + (i + 1), name }));
   for (const i of Array.isArray(d.items) ? d.items : []) {
     if (!i || typeof i.name !== "string" || !i.name.trim() || o.items.length >= MAX_ROWS) continue;
     o.items.push({ id: String(i.id || uid()), name: i.name.slice(0, 40), qty: qty(i.qty),
@@ -360,7 +494,7 @@ const $ = id => document.getElementById(id);
 const showNotice = msg => { $("notice").textContent = msg; $("notice").classList.remove("hide"); };
 const rawData = store.get(LS);
 let data;
-try { data = normalize(JSON.parse(rawData)); } catch { data = normalize(null); if (rawData) { store.set("fridgey.corrupt", rawData); showNotice("저장된 데이터를 읽지 못해 새로 시작했어요. 원본은 이 기기에 따로 남겨 뒀어요."); } }
+try { data = normalize(JSON.parse(rawData)); } catch { data = normalize(null); if (rawData) { store.set("fridgey.corrupt", rawData); showNotice(t("corrupt")); } }
 let pref = {}; try { pref = JSON.parse(store.get("fridgey.pref")) || {}; } catch {}
 let tab = "fridge", kind = pref.kind === "cook" ? "cook" : "exp", zoneId = data.zones.some(z => z.id === pref.zone) ? pref.zone : data.zones[0].id, editing = null;
 const savePref = () => store.set("fridgey.pref", JSON.stringify({ zone: zoneId, kind }));
@@ -373,7 +507,7 @@ const h = (tag, props = {}, ...kids) => {
   return e;
 };
 const fillTo = (el, ...kids) => el.replaceChildren(...kids.flat(Infinity));   // 목록(배열)이 섞여 있어도 풀어서 넣는다
-const L = k => data.labels[k]?.trim() || DEFAULT_LABELS[k];
+const L = k => data.labels[k]?.trim() || DEF[LANG][k];
 let saveFailed = false;
 // ---- 공유(동기화): 키로 암호화한 데이터 1덩어리를 Supabase 에 맡긴다. supabase.sql 먼저 실행하고 아래 두 값을 채운다. ----
 const SYNC = { url: "https://unpfcmdbdcpstsdnatud.supabase.co", anon: "sb_publishable_v6QdtRd2q62-1zplFR6uzw_LL_WppI8" };   // Project URL / anon public key (공개 키). 비어 있으면 공유 기능은 숨겨진다. service_role 키는 절대 넣지 말 것.
@@ -387,7 +521,7 @@ async function rpc(fn, args) {
   return r.json();
 }
 const save = () => {
-  if (!store.set(LS, JSON.stringify(data)) && !saveFailed) { saveFailed = true; showNotice("이 기기에 저장하지 못했어요. 설정에서 데이터를 내보내 백업해 두세요."); }
+  if (!store.set(LS, JSON.stringify(data)) && !saveFailed) { saveFailed = true; showNotice(t("saveFail")); }
   if (sync && JSON.stringify(data) !== synced) { dirty = true; clearTimeout(pushTimer); pushTimer = setTimeout(syncNow, 800); }
 };
 async function readRoom() {   // 서버 행 → { data, rev } (없으면 null). 키가 틀리면 decrypt 가 던진다.
@@ -410,7 +544,7 @@ async function syncNow() {
       const res = await rpc("put_room", { p_id: sync.id, p_blob: await encrypt(sync.aes, data), p_rev: sync.rev });
       if (res < 0) {   // 다른 기기가 먼저 저장함 → 서버 내용으로 교체(마지막 저장 우선)
         const room = await readRoom();
-        if (room) { dirty = false; document.querySelectorAll("dialog[open]:not(#kDlg)").forEach(d => d.close()); adopt(room); render(); showNotice("다른 기기에서 먼저 바뀌어서 최신 내용으로 불러왔어요. 방금 한 변경이 안 보이면 다시 입력해 주세요."); }
+        if (room) { dirty = false; document.querySelectorAll("dialog[open]:not(#kDlg)").forEach(d => d.close()); adopt(room); render(); showNotice(t("conflict")); }
         else { sync.rev = 0; dirty = true; }   // 서버 행이 사라짐 → 다음에 다시 만든다
       } else { sync.rev = res; synced = snap; saveSync(); }
     } else {
@@ -418,8 +552,8 @@ async function syncNow() {
       if (!room) { sync.rev = 0; dirty = true; }
       else if (room.rev !== sync.rev && !document.querySelector("dialog[open]")) { adopt(room); render(); }   // 대화상자가 열려 있으면 닫힌 뒤 다음 주기에
     }
-    syncStatus = "동기화됨 " + new Date().toTimeString().slice(0, 5);
-  } catch { failed = true; dirty = dirty || wasDirty; syncStatus = "연결되지 않아요. 연결되면 다시 맞춰요."; }
+    syncStatus = t("synced", new Date().toTimeString().slice(0, 5));
+  } catch { failed = true; dirty = dirty || wasDirty; syncStatus = t("offline"); }
   finally { busy = false; }
   if (dirty) { clearTimeout(pushTimer); pushTimer = setTimeout(syncNow, failed ? 15000 : 800); }
 }
@@ -430,20 +564,20 @@ async function createRoom() {   // 이 기기 데이터를 새 키로 올린다
     await useKey(key, 0);
     const res = await rpc("put_room", { p_id: sync.id, p_blob: await encrypt(sync.aes, data), p_rev: 0 });
     if (res < 0) throw new Error("exists");
-    sync.rev = res; synced = JSON.stringify(data); saveSync(); store.set("fridgey.noauto", ""); syncStatus = "동기화됨 " + new Date().toTimeString().slice(0, 5);
-  } catch { sync = null; return alert("서버에 연결하지 못했어요. 잠시 뒤 다시 해 주세요."); }
+    sync.rev = res; synced = JSON.stringify(data); saveSync(); store.set("fridgey.noauto", ""); syncStatus = t("synced", new Date().toTimeString().slice(0, 5));
+  } catch { sync = null; return alert(t("noServer")); }
   await keyGate();
 }
 async function joinRoom(text) {   // 키 파일로 참여: 서버 내용으로 이 기기 데이터를 바꾼다
-  let key; try { key = parseKeyFile(text); } catch (e) { return alert(e.message); }
+  let key; try { key = parseKeyFile(text); } catch { return alert(t("badKeyFile")); }
   const prev = sync;
   try {
     await useKey(key, 0);
     const room = await readRoom();
-    if (!room) { sync = prev; return alert("이 키로 저장된 냉장고를 찾지 못했어요."); }
-    if (!confirm(`이 기기의 데이터를 공유 냉장고(재료 ${room.data.items.length}개, 장보기 ${room.data.shop.length}개)로 바꿔요. 계속할까요?`)) { sync = prev; return; }
-    adopt(room); store.set("fridgey.keysaved", sync.id); syncStatus = "동기화됨 " + new Date().toTimeString().slice(0, 5);   // 받은 키 파일로 들어왔으니 이미 보관한 것
-  } catch (e) { sync = prev; alert(/http|fetch|network/i.test(e.message) ? "서버에 연결하지 못했어요. 잠시 뒤 다시 해 주세요." : "키가 맞지 않거나 데이터를 읽을 수 없어요."); }
+    if (!room) { sync = prev; return alert(t("noRoom")); }
+    if (!confirm(t("joinConfirm", room.data.items.length, room.data.shop.length))) { sync = prev; return; }
+    adopt(room); store.set("fridgey.keysaved", sync.id); syncStatus = t("synced", new Date().toTimeString().slice(0, 5));   // 받은 키 파일로 들어왔으니 이미 보관한 것
+  } catch (e) { sync = prev; alert(/http|fetch|network/i.test(e.message) ? t("noServer") : t("wrongKey")); }
 }
 function leaveRoom() { sync = null; synced = ""; dirty = false; clearTimeout(pushTimer); store.set("fridgey.sync", ""); store.set("fridgey.noauto", "1"); syncStatus = ""; }   // 끊은 기기는 다음에 자동으로 새 키를 만들지 않는다
 async function autoRoom() {   // 처음 켠 기기: 키를 자동으로 만들어 서버 백업을 시작(오프라인이면 연결될 때 올라간다)
@@ -454,7 +588,7 @@ async function shareKey() {   // 키 파일 보관: 공유 창(카톡 나에게 
   let done = false;
   try {
     const f = new File([text], name, { type: "application/json" });
-    if (navigator.canShare?.({ files: [f] })) { await navigator.share({ files: [f], title: "Fridgey 키 파일" }); done = true; }
+    if (navigator.canShare?.({ files: [f] })) { await navigator.share({ files: [f], title: t("shareTitle") }); done = true; }
   } catch (e) { if (e.name === "AbortError") return false; }
   if (!done) download(name, text);
   store.set("fridgey.keysaved", sync.id);
@@ -472,15 +606,15 @@ function keyGate() {
       if (store.get("fridgey.keysaved") === sync?.id) finish();
     };
     fillTo($("kBody"),
-      h("h2", { id: "kTitle", textContent: "냉장고 열쇠를 꼭 보관하세요" }),
-      h("p", { textContent: "이 냉장고는 자동으로 암호화돼서 서버에 백업돼요. 여는 열쇠는 '키 파일' 하나뿐이에요." }),
-      h("p", {}, "쿠키·사이트 데이터를 지우거나 폰을 바꾸면 ", h("strong", { textContent: "이 키 파일로만 되살릴 수 있고, 잃어버리면 아무도 복구할 수 없어요." })),
-      h("p", { textContent: "카톡 '나에게 보내기'로 보내 두면 가장 편해요. 함께 쓸 사람에게도 이 파일을 보내 주세요." }),
+      h("h2", { id: "kTitle", textContent: t("gateTitle") }),
+      h("p", { textContent: t("gate1") }),
+      h("p", {}, t("gate2a"), h("strong", { textContent: t("gate2b") })),
+      h("p", { textContent: t("gate3") }),
       msg,
-      h("button", { className: "big", textContent: "키 파일 보관하기", async onclick() {
-        if (await shareKey()) finish(); else msg.textContent = "보관이 끝나야 다음으로 넘어가요. 다시 눌러 주세요.";
+      h("button", { className: "big", textContent: t("saveKey"), async onclick() {
+        if (await shareKey()) finish(); else msg.textContent = t("gateRetry");
       } }),
-      h("button", { className: "ghost", textContent: "이미 받은 키 파일이 있어요 (참여하기)", onclick: () => file.click() }), file);
+      h("button", { className: "ghost", textContent: t("haveKey"), onclick: () => file.click() }), file);
     $("kDlg").onclose = () => { if (store.get("fridgey.keysaved") !== sync?.id) setTimeout(() => openDlg($("kDlg")), 0); };   // 폰 뒤로가기가 창을 직접 닫아도 보관 전이면 다시 연다
     openDlg($("kDlg"));
   });
@@ -493,26 +627,26 @@ const guidePref = () => { try { return JSON.parse(store.get(GUIDE)) || {}; } cat
 const guideHidden = () => { const g = guidePref(); return !!g.never || g.until > Date.now(); };
 function guideState() {
   const g = guidePref();
-  if (g.never) return "시작할 때 사용법 안내: 다시 보지 않음";
-  if (g.until > Date.now()) { const d = new Date(g.until); return `시작할 때 사용법 안내: ${d.getMonth() + 1}월 ${d.getDate()}일까지 숨김`; }
-  return "시작할 때 사용법 안내: 보임";
+  if (g.never) return t("guideNever");
+  if (g.until > Date.now()) { const d = new Date(g.until); return t("guideUntil", d.getMonth() + 1, d.getDate()); }
+  return t("guideOn");
 }
 function openGuide(fromSettings) {
   guideLocked = !fromSettings;   // 시작 안내는 두 선택지 중 하나로만 닫힘(뒤로가기 무시)
   fillTo($("gBody"),
     h("div", { className: "note" },
-      h("div", { textContent: `① ${L("fName")}을(를) 쓰고 날짜(예: 261020)를 넣은 뒤 ${L("addBtn")}. 글자를 치면 자주 쓴 이름이 떠서 누르면 바로 들어가요.` }),
-      h("div", { textContent: "② 이 냉장고는 자동으로 암호화돼서 서버에 백업돼요. 여는 열쇠는 '키 파일' 하나뿐이라 서버 주인도 내용을 못 봐요." }),
-      h("div", { textContent: "③ 키 파일을 카톡 '나에게 보내기' 등으로 꼭 보관하세요. 쿠키·사이트 데이터를 지우거나 폰을 바꿔도 ⚙ → '키 파일로 참여하기'로 그대로 되살릴 수 있어요." }),
-      h("div", { textContent: "④ 함께 쓰려면 키 파일을 보내 주세요. 받은 사람은 ⚙ → '키 파일로 참여하기'. 이미 받은 키 파일이 있다면 지금 그렇게 하면 돼요." }),
-      h("div", { textContent: "⑤ 키 파일을 잃어버리면 아무도(만든 사람도) 복구할 수 없어요." })),
-    sync ? h("button", { textContent: "키 파일 보관하기", style: "width:100%", onclick: shareKey })
-      : h("div", { className: "meta", textContent: syncOn() ? "아직 서버 백업이 켜져 있지 않아요. ⚙ → '공유 냉장고 만들기'로 시작할 수 있어요." : "" }));
+      h("div", { textContent: t("g1", L("fName"), L("addBtn")) }),
+      h("div", { textContent: t("g2") }),
+      h("div", { textContent: t("g3") }),
+      h("div", { textContent: t("g4") }),
+      h("div", { textContent: t("g5") })),
+    sync ? h("button", { textContent: t("saveKey"), style: "width:100%", onclick: shareKey })
+      : h("div", { className: "meta", textContent: syncOn() ? t("noBackup") : "" }));
   const hide = days => { store.set(GUIDE, JSON.stringify(days ? { until: Date.now() + days * 864e5 } : { never: true })); $("gDlg").close(); };
   fillTo($("gActs"), fromSettings
-    ? h("button", { type: "button", textContent: "닫기", onclick: () => $("gDlg").close() })
-    : [h("button", { type: "button", className: "ghost", textContent: "7일간 보지 않기", onclick: () => hide(7) }),
-       h("button", { type: "button", className: "ghost", textContent: "다시 보지 않기", onclick: () => hide(0) })]);
+    ? h("button", { type: "button", textContent: t("close"), onclick: () => $("gDlg").close() })
+    : [h("button", { type: "button", className: "ghost", textContent: t("hide7"), onclick: () => hide(7) }),
+       h("button", { type: "button", className: "ghost", textContent: t("hideNever"), onclick: () => hide(0) })]);
   openDlg($("gDlg"));
 }
 $("gDlg").oncancel = e => e.preventDefault();   // 시작 안내는 두 선택지 중 하나로 닫는다(뒤로가기·Esc로 닫히지 않게)
@@ -522,7 +656,7 @@ const kindLabel = k => k === "cook" ? L("fCook") : L("fDate");
 // 구역 선택 = 구역마다 버튼 하나(한 번 누르면 선택). 고른 값은 box.value 에 두고 box.onchange 를 부른다(예전 select 와 같은 사용법)
 const fillZones = (box, cur) => {
   box.value = data.zones.some(z => z.id === cur) ? cur : data.zones[0].id;
-  box.replaceChildren(...data.zones.map(z => h("button", { type: "button", className: "seg" + (z.id === box.value ? " on" : ""), textContent: z.name || "구역", "aria-pressed": String(z.id === box.value), onclick() {
+  box.replaceChildren(...data.zones.map(z => h("button", { type: "button", className: "seg" + (z.id === box.value ? " on" : ""), textContent: z.name || t("zone"), "aria-pressed": String(z.id === box.value), onclick() {
     box.value = z.id;
     for (const b of box.children) { b.classList.toggle("on", b === this); b.setAttribute("aria-pressed", String(b === this)); }
     box.onchange?.();
@@ -534,7 +668,17 @@ function download(name, text) {
 }
 
 // ---- 화면 ----
+function applyLang() {   // 정적 화면 글자(대화상자 제목·버튼 등)를 지금 언어로
+  document.documentElement.lang = LANG;
+  $("gear").setAttribute("aria-label", t("settings"));
+  for (const [id, k] of [["eTitle", "edit"], ["eKindL", "dateKind"], ["eZoneL", "zone"], ["eCancel", "cancel"], ["eSave", "save"], ["mZoneL", "zone"], ["mCancel", "cancel"], ["mSave", "moveDo"], ["sTitle", "settings"], ["sClose", "close"], ["gTitle", "guideTitle"]]) $(id).textContent = t(k);
+  $("mTitle").textContent = t("moveTitle", L("tabFridge"));
+  for (const id of ["eZone", "mZone"]) $(id).setAttribute("aria-label", t("zone"));
+  $("eDate").placeholder = t("eDatePh");
+  shopBar.sugg.setAttribute("aria-label", t("suggShop"));
+}
 function applyLabels() {
+  applyLang();
   $("title").textContent = L("title"); document.title = L("title");
   $("tabFridge").textContent = L("tabFridge"); $("tabShop").textContent = L("tabShop");
   $("eDel").textContent = L("doneBtn");
@@ -568,8 +712,9 @@ fb.root = h("form", { className: "card entry" },
 fb.hint = h("div", { className: "note" });
 fb.listBox = h("div");
 function refreshFridgeBar() {
-  fb.name.placeholder = L("fName") + " (예: 우유)"; fb.name.setAttribute("aria-label", L("fName"));
-  fb.date.placeholder = kindLabel(kind) + " 예: 261020"; fb.date.setAttribute("aria-label", kindLabel(kind));
+  fb.name.placeholder = t("namePh", L("fName")); fb.name.setAttribute("aria-label", L("fName"));
+  fb.date.placeholder = t("datePh", kindLabel(kind)); fb.date.setAttribute("aria-label", kindLabel(kind));
+  fb.kind.title = t("tapToSwitch"); fb.zone.setAttribute("aria-label", t("zone")); fb.sugg.setAttribute("aria-label", t("suggFridge"));
   fb.kind.textContent = kindLabel(kind) + " ⇄";
   fb.add.textContent = L("addBtn");
   fillZones(fb.zone, zoneId);
@@ -585,12 +730,12 @@ fb.root.onsubmit = e => {
   const name = fb.name.value.trim();
   if (!name) return fb.name.focus();
   const date = parseDate(fb.date.value, kind);
-  if (date === null) { fb.date.classList.add("bad"); fb.msg.textContent = "날짜를 확인해 주세요. 예: 261020 (26년 10월 20일)"; return fb.date.focus(); }
-  if (data.items.length >= MAX_ROWS) { fb.msg.textContent = `재료는 최대 ${MAX_ROWS}개까지예요. 다 먹은 것을 정리해 주세요.`; return; }
+  if (date === null) { fb.date.classList.add("bad"); fb.msg.textContent = t("badDate"); return fb.date.focus(); }
+  if (data.items.length >= MAX_ROWS) { fb.msg.textContent = t("maxItems", MAX_ROWS); return; }
   data.items.push({ id: uid(), name, qty: "1", zone: fb.zone.value, date, kind });
   bumpWord(data.words, name, MAX_WORDS);
   save();
-  fb.name.value = ""; fb.date.value = ""; fb.msg.textContent = `✓ ${name}${date ? ` · ${fmtDate(date)} (${status({ date, kind }).label})` : ""} → ${zoneName(fb.zone.value)}`;
+  fb.name.value = ""; fb.date.value = ""; fb.msg.textContent = `✓ ${name}${date ? ` · ${fmtDate(date)} (${status({ date, kind }, undefined, LANG).label})` : ""} → ${zoneName(fb.zone.value)}`;
   renderFridgeList(); renderSugg(fb); fb.name.focus();
 };
 fb.name.oninput = () => renderSugg(fb);
@@ -606,20 +751,20 @@ function fridgeView() {
 }
 function renderFridgeList() {
   fb.hint.classList.toggle("hide", data.items.length > 0);
-  fb.hint.textContent = `${L("fName")}을(를) 쓰고 ${L("addBtn")}을(를) 누르면 급한 순으로 정리돼요. 날짜는 비워도 돼요. 구역 이름·층 수는 오른쪽 위 ⚙에서 바꿀 수 있어요. ${sync ? "공유 냉장고로 함께 쓰는 중이에요." : "데이터는 이 폰에만 저장돼요."}`;
+  fb.hint.textContent = t("hint", L("fName"), L("addBtn"), !!sync);
   fb.listBox.replaceChildren(...data.zones.map(z => {
     const list = data.items.filter(i => i.zone === z.id).sort(byUrgency);
     return h("section", { className: "card zone" },
-      h("h2", {}, h("span", { textContent: z.name || "구역" }), h("span", { textContent: list.length })),
+      h("h2", {}, h("span", { textContent: z.name || t("zone") }), h("span", { textContent: list.length })),
       list.length ? list.map(i => {
-        const s = status(i);
-        return h("div", { className: "item " + s.level, role: "button", tabIndex: 0, "aria-label": `${i.name} 수정`, onclick: () => openEdit(i), onkeydown(e) { if (e.target === this && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openEdit(i); } } },
+        const s = status(i, undefined, LANG);
+        return h("div", { className: "item " + s.level, role: "button", tabIndex: 0, "aria-label": t("editAria", i.name), onclick: () => openEdit(i), onkeydown(e) { if (e.target === this && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openEdit(i); } } },
           h("div", { className: "grow", style: "flex:1;min-width:0" },
             h("div", { className: "name", textContent: i.name + (i.qty !== "1" ? ` ×${i.qty}` : "") }),
             h("div", { className: "meta", textContent: i.date ? `${kindLabel(i.kind)} ${fmtDate(i.date)}` : "" })),
           s.label ? h("span", { className: "badge " + s.level, textContent: s.label }) : "",
-          h("button", { className: "ghost done", textContent: L("doneBtn"), "aria-label": `${i.name} ${L("doneBtn")} (${L("tabBin")}으로)`, onclick(e) { e.stopPropagation(); processItem(i); }, onkeydown(e) { e.stopPropagation(); } }));
-      }) : h("div", { className: "meta", textContent: "비어 있음" }));
+          h("button", { className: "ghost done", textContent: L("doneBtn"), "aria-label": t("doneAria", i.name, L("doneBtn"), L("tabBin")), onclick(e) { e.stopPropagation(); processItem(i); }, onkeydown(e) { e.stopPropagation(); } }));
+      }) : h("div", { className: "meta", textContent: t("empty") }));
   }));
 }
 
@@ -635,15 +780,23 @@ shopBar.root.onsubmit = e => {
   e.preventDefault();
   const name = shopBar.name.value.trim();
   if (!name) return shopBar.name.focus();
-  if (data.shop.length >= MAX_ROWS) return alert(`장보기 목록은 최대 ${MAX_ROWS}개까지예요. 산 것을 정리해 주세요.`);
+  if (data.shop.length >= MAX_ROWS) return alert(t("maxShop", MAX_ROWS));
   data.shop.push({ id: uid(), name, qty: qty(shopBar.qty.value), done: false });
   bumpWord(data.words, name, MAX_WORDS);
   save(); shopBar.name.value = ""; shopBar.qty.value = "1"; renderShopList(); shopSugg(); shopBar.name.focus();
 };
 shopBar.qty.onfocus = () => { shopBar.qty.select(); reveal(shopBar.qty); };
-shopBar.sugg = h("div", { className: "sugg hide", "aria-label": "자주 사는 것 (누르면 바로 추가)" });
+shopBar.sugg = h("div", { className: "sugg hide", "aria-label": t("suggShop") });
 const shopSugg = () => renderSugg(shopBar, data.shop.filter(s => !s.done).map(s => s.name));   // 이미 목록에 있는 건 빼고
 shopBar.name.oninput = shopSugg;
+function inFridgePill(name) {   // 장보기 항목이 이미 냉장고에 있으면 작은 알약으로 알려 준다
+  const key = name.trim().toLowerCase();
+  const same = data.items.filter(i => i.name.trim().toLowerCase() === key);
+  if (!same.length) return "";
+  const n = same.reduce((a, i) => a + (parseInt(i.qty, 10) || 1), 0);
+  const zones = [...new Set(same.map(i => zoneName(i.zone)).filter(Boolean))].join(", ");
+  return h("span", { className: "pill", textContent: t("inFridge", name, n, zones) });
+}
 function shopView() { renderShopList(); shopSugg(); return h("div", {}, shopBar.root, shopBar.sugg, shopBar.listBox); }
 function renderShopList() {
   const done = data.shop.filter(s => s.done);
@@ -651,11 +804,13 @@ function renderShopList() {
     data.shop.length ? h("div", { className: "card" }, data.shop.map(s => h("div", { className: "item", style: "cursor:default" },
       h("label", { style: "display:flex;align-items:center;justify-content:center;width:44px;min-height:44px;margin:0;flex:none" },
         h("input", { type: "checkbox", checked: s.done, "aria-label": s.name, style: "width:24px;min-height:24px", onchange() { s.done = this.checked; save(); const n = data.shop.indexOf(s); renderShopList(); shopBar.listBox.querySelectorAll("input[type=checkbox]")[n]?.focus(); } })),
-      h("div", { className: "name", style: "flex:1;min-width:0" + (s.done ? ";text-decoration:line-through;opacity:.6" : ""), textContent: s.name }),
+      h("div", { style: "flex:1;min-width:0" },
+        h("div", { className: "name", style: s.done ? "text-decoration:line-through;opacity:.6" : "", textContent: s.name }),
+        inFridgePill(s.name)),
       h("input", { value: s.qty, "aria-label": `${s.name} ${L("fQty")}`, style: "width:72px;text-align:center", maxLength: 20, onfocus() { this.select(); reveal(this); }, oninput() { s.qty = qty(this.value); save(); }, onchange() { this.value = s.qty; } }),
-      h("button", { className: "ghost x", textContent: "✕", "aria-label": `${s.name} 삭제`, style: "padding:8px 12px;min-width:44px", onclick() { data.shop = data.shop.filter(x => x !== s); save(); renderShopList(); } }))))
-      : h("div", { className: "empty", textContent: `사려는 것을 위 칸에 적어 보세요. 사온 뒤 체크하면 ${L("tabFridge")}에 바로 넣을 수 있어요.` }),
-    done.length ? h("button", { textContent: `체크한 ${done.length}개를 ${L("tabFridge")}에 넣기`, style: "width:100%", onclick: openMove }) : "");
+      h("button", { className: "ghost x", textContent: "✕", "aria-label": t("delAria", s.name), style: "padding:8px 12px;min-width:44px", onclick() { data.shop = data.shop.filter(x => x !== s); save(); renderShopList(); } }))))
+      : h("div", { className: "empty", textContent: t("shopEmpty", L("tabFridge")) }),
+    done.length ? h("button", { textContent: t("moveBtn", done.length, L("tabFridge")), style: "width:100%", onclick: openMove }) : "");
 }
 
 // ---- 재료 수정 ----
@@ -670,7 +825,7 @@ $("eForm").onsubmit = e => {
   e.preventDefault();
   const name = $("eName").value.trim(), date = parseDate($("eDate").value, $("eKind").value);
   if (!name) return $("eName").focus();
-  if (date === null) { $("eDate").classList.add("bad"); $("eErr").textContent = "날짜를 확인해 주세요. 예: 261020"; return $("eDate").focus(); }
+  if (date === null) { $("eDate").classList.add("bad"); $("eErr").textContent = t("badDateShort"); return $("eDate").focus(); }
   Object.assign(editing, { name, date, kind: $("eKind").value, qty: qty($("eQty").value), zone: $("eZone").value });
   save(); $("eDlg").close(); render();
 };
@@ -689,30 +844,30 @@ function processItem(it) {   // 냉장고 → 음쓰통(최근 것이 위, 최�
   const b = { ...it, binAt: todayISO() };
   data.bin = [b, ...data.bin].slice(0, MAX_BIN);
   save(); render();
-  fb.msg.replaceChildren(`‘${it.name}’ ${L("tabBin")}으로(⚙에서 볼 수 있어요) · `, h("a", { href: "#", textContent: "되돌리기", style: "color:var(--main);font-weight:600;padding:10px 4px", onclick(e) { e.preventDefault(); if (data.bin.includes(b)) restoreItem(b); render(); } }));
+  fb.msg.replaceChildren(t("processed", it.name, L("tabBin")), h("a", { href: "#", textContent: t("undo"), style: "color:var(--main);font-weight:600;padding:10px 4px", onclick(e) { e.preventDefault(); if (data.bin.includes(b)) restoreItem(b); render(); } }));
   clearTimeout(undoTimer); undoTimer = setTimeout(() => { if (fb.msg.querySelector("a")) fb.msg.textContent = ""; }, 8000);
 }
 $("eDel").onclick = () => { const it = editing; $("eDlg").close(); processItem(it); };
 function binSection() {   // 설정 안 음쓰통: 처리한 재료(최근 것부터), 되돌리기
   return h("details", { style: "margin-top:18px", open: binOpen, ontoggle() { binOpen = this.open; } },
-    h("summary", { textContent: `${L("tabBin")} (${data.bin.length}개) — ${L("doneBtn")}한 재료, 되돌리거나 지울 수 있어요`, style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--main);padding:10px 0" }),
-    h("div", { className: "meta", textContent: `최근 ${MAX_BIN}개까지 보관돼요.`, style: "margin-bottom:6px" }),
+    h("summary", { textContent: t("binSummary", L("tabBin"), data.bin.length, L("doneBtn")), style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--main);padding:10px 0" }),
+    h("div", { className: "meta", textContent: t("binKeep", MAX_BIN), style: "margin-bottom:6px" }),
     data.bin.length ? data.bin.map(b => h("div", { className: "row", style: "padding:8px 0;border-top:1px solid var(--line)" },
       h("div", { className: "grow" },
         h("div", { className: "name", textContent: b.name + (b.qty !== "1" ? ` ×${b.qty}` : "") }),
-        h("div", { className: "meta", textContent: [zoneName(b.zone), b.date && `${kindLabel(b.kind)} ${fmtDate(b.date)}`, b.binAt && `${+b.binAt.slice(5, 7)}/${+b.binAt.slice(8)} ${L("doneBtn")}`].filter(Boolean).join(" · ") })),
-      h("button", { className: "ghost done", textContent: "되돌리기", "aria-label": `${b.name} 되돌리기`, onclick() { restoreItem(b); renderSettings(); } }),
-      h("button", { className: "danger done", textContent: "지우기", "aria-label": `${b.name} 완전히 지우기`, onclick() {   // 음쓰통에서 아예 지움(되돌릴 수 없음)
-        if (confirm(`‘${b.name}’을(를) 완전히 지울까요? 되돌릴 수 없어요.`)) { data.bin = data.bin.filter(x => x !== b); save(); renderSettings(); }
+        h("div", { className: "meta", textContent: [zoneName(b.zone), b.date && `${kindLabel(b.kind)} ${fmtDate(b.date)}`, b.binAt && t("binDate", +b.binAt.slice(5, 7), +b.binAt.slice(8), L("doneBtn"))].filter(Boolean).join(" · ") })),
+      h("button", { className: "ghost done", textContent: t("restore"), "aria-label": t("restoreAria", b.name), onclick() { restoreItem(b); renderSettings(); } }),
+      h("button", { className: "danger done", textContent: t("erase"), "aria-label": t("eraseAria", b.name), onclick() {   // 음쓰통에서 아예 지움(되돌릴 수 없음)
+        if (confirm(t("eraseConfirm", b.name))) { data.bin = data.bin.filter(x => x !== b); save(); renderSettings(); }
       } })))
-      : h("div", { className: "meta", textContent: `아직 비어 있어요. ${L("tabFridge")}에서 ${L("doneBtn")}을 누르면 여기로 와요.` }));
+      : h("div", { className: "meta", textContent: t("binEmpty", L("tabFridge"), L("doneBtn")) }));
 }
 
 // ---- 장보기 → 냉장고 ----
 let moveRows = [];
 function openMove() {
   fillZones($("mZone"), zoneId);
-  moveRows = data.shop.filter(s => s.done).map(s => ({ s, date: h("input", { inputMode: "numeric", maxLength: 12, autocomplete: "off", placeholder: L("fDate") + " 예: 261020 (비워도 돼요)", "aria-label": s.name }) }));
+  moveRows = data.shop.filter(s => s.done).map(s => ({ s, date: h("input", { inputMode: "numeric", maxLength: 12, autocomplete: "off", placeholder: t("movePh", L("fDate")), "aria-label": s.name }) }));
   moveRows.forEach((r, i) => {
     r.date.oninput = () => { r.date.classList.remove("bad"); $("mErr").textContent = ""; };
     r.date.onfocus = () => reveal(r.date);
@@ -726,8 +881,8 @@ function openMove() {
 $("mForm").onsubmit = e => {
   e.preventDefault();
   const dates = moveRows.map(r => parseDate(r.date.value, "exp"));
-  if (dates.includes(null)) { const i = dates.indexOf(null); moveRows[i].date.classList.add("bad"); $("mErr").textContent = "날짜를 확인해 주세요. 예: 261020"; return moveRows[i].date.focus(); }
-  if (data.items.length + moveRows.length > MAX_ROWS) { $("mErr").textContent = `재료는 최대 ${MAX_ROWS}개까지예요. 다 먹은 것을 정리해 주세요.`; return; }
+  if (dates.includes(null)) { const i = dates.indexOf(null); moveRows[i].date.classList.add("bad"); $("mErr").textContent = t("badDateShort"); return moveRows[i].date.focus(); }
+  if (data.items.length + moveRows.length > MAX_ROWS) { $("mErr").textContent = t("maxItems", MAX_ROWS); return; }
   zoneId = $("mZone").value; savePref();
   moveRows.forEach((r, i) => data.items.push({ id: uid(), name: r.s.name, qty: r.s.qty, zone: zoneId, date: dates[i], kind: "exp" }));
   const moved = new Set(moveRows.map(r => r.s)); data.shop = data.shop.filter(s => !moved.has(s));
@@ -738,72 +893,77 @@ $("mCancel").onclick = () => $("mDlg").close();
 // ---- 설정 ----
 let wordsOpen = false, binOpen = false;
 function openSettings() { renderSettings(); openDlg($("sDlg")); }
-const BAD_FILE = "이 파일은 Fridgey에서 내보낸 데이터가 아닌 것 같아요. '데이터 내보내기'로 저장한 .json 파일을 골라 주세요.";
+const BAD_FILE = () => t("badFile");
 function renderSettings() {
   const file = h("input", { type: "file", accept: ".json,application/json", className: "hide" });
   file.onchange = async () => {
     try {
       const raw = JSON.parse(await file.files[0].text());
-      if (!raw || typeof raw !== "object" || !["items", "shop", "zones"].some(k => Array.isArray(raw[k]))) return alert(BAD_FILE);
+      if (!raw || typeof raw !== "object" || !["items", "shop", "zones"].some(k => Array.isArray(raw[k]))) return alert(BAD_FILE());
       const d = normalize(raw);
-      if (!confirm(`지금 데이터를 파일 내용으로 바꿔요. (재료 ${d.items.length}개, 장보기 ${d.shop.length}개) 계속할까요?`)) return;
+      if (!confirm(t("importConfirm", d.items.length, d.shop.length))) return;
       data = d; save(); zoneId = data.zones[0].id; renderSettings(); render();
-    } catch { alert(BAD_FILE); } finally { file.value = ""; }
+    } catch { alert(BAD_FILE()); } finally { file.value = ""; }
   };
   const keyFile = h("input", { type: "file", accept: ".json,application/json", className: "hide" });
   keyFile.onchange = async () => { try { await joinRoom(await keyFile.files[0].text()); } finally { keyFile.value = ""; renderSettings(); render(); } };
   fillTo($("sBody"),
-    h("h3", { textContent: "구역 (층)" }),
+    h("h3", { textContent: t("hZones") }),
     data.zones.map(z => h("div", { className: "row", style: "margin-bottom:8px" },
-      h("input", { value: z.name, maxLength: 20, "aria-label": "구역 이름", oninput() { z.name = this.value; save(); }, onblur() { if (!z.name.trim()) { z.name = "구역"; this.value = z.name; save(); } } }),
-      h("button", { className: "danger", textContent: "✕", "aria-label": `${z.name} 구역 삭제`, style: "padding:8px 12px;min-width:44px", onclick() { delZone(z); } }))),
-    h("button", { className: "ghost", textContent: "＋ 구역 추가", style: "width:100%", onclick() { data.zones.push({ id: uid(), name: `${data.zones.length + 1}층` }); save(); renderSettings(); } }),
-    h("h3", { textContent: "테마 (함께 쓰는 사람과 공유돼요)" }),
-    h("div", { className: "segs", role: "group", "aria-label": "테마" }, Object.keys(SKINS).map(s => h("button", {
+      h("input", { value: z.name, maxLength: 20, "aria-label": t("zoneNameAria"), oninput() { z.name = this.value; save(); }, onblur() { if (!z.name.trim()) { z.name = t("zone"); this.value = z.name; save(); } } }),
+      h("button", { className: "danger", textContent: "✕", "aria-label": t("zoneDelAria", z.name), style: "padding:8px 12px;min-width:44px", onclick() { delZone(z); } }))),
+    h("button", { className: "ghost", textContent: t("addZone"), style: "width:100%", onclick() { data.zones.push({ id: uid(), name: t("zoneNew", data.zones.length + 1) }); save(); renderSettings(); } }),
+    h("h3", { textContent: t("hLang") }),
+    h("div", { className: "segs", role: "group", "aria-label": t("hLang") }, [["ko", "한국어"], ["en", "English"]].map(([l, name]) => h("button", {
+      type: "button", className: "seg" + (LANG === l ? " on" : ""), "aria-pressed": String(LANG === l), lang: l, textContent: name,
+      onclick() { LANG = l; store.set("fridgey.lang", l); renderSettings(); render(); },
+    }))),
+    h("h3", { textContent: t("hTheme") }),
+    h("div", { className: "segs", role: "group", "aria-label": t("themeAria") }, Object.keys(SKINS).map(s => h("button", {
       type: "button", className: "seg" + (data.theme === s ? " on" : ""), "aria-pressed": String(data.theme === s),
       onclick() { data.theme = s; save(); applySkin(s); renderSettings(); },
-    }, h("span", { className: "dot", style: `background:${SKINS[s][1]}` }), SKINS[s][0]))),
+    }, h("span", { className: "dot", style: `background:${SKINS[s][1]}` }), t("skinNames")[s]))),
     syncOn() ? [
-      h("h3", { textContent: "공유 (가족과 함께 쓰기)" }),
+      h("h3", { textContent: t("hShare") }),
       sync ? [
-        h("div", { className: "note", textContent: `공유 중이에요. ${syncStatus || "곧 동기화돼요."}` }),
-        h("button", { className: "ghost", textContent: "키 파일 보관하기 (카톡 나에게 보내기 등)", style: "width:100%", onclick: shareKey }),
-        h("button", { className: "danger", textContent: "이 기기에서 공유 끊기", style: "width:100%;margin-top:8px", onclick() {
-          if (confirm("이 기기에서 공유를 끊어요. (데이터는 이 기기에 남아요.) 키 파일이 없으면 다시 참여할 수 없어요. 계속할까요?")) { leaveRoom(); renderSettings(); render(); }
+        h("div", { className: "note", textContent: t("sharing", syncStatus) }),
+        h("button", { className: "ghost", textContent: t("saveKeyLong"), style: "width:100%", onclick: shareKey }),
+        h("button", { className: "danger", textContent: t("leave"), style: "width:100%;margin-top:8px", onclick() {
+          if (confirm(t("leaveConfirm"))) { leaveRoom(); renderSettings(); render(); }
         } })]
       : [
-        h("div", { className: "note", textContent: "키 파일을 가진 사람끼리 같은 냉장고를 함께 써요. 데이터는 키로 암호화돼서 서버에는 읽을 수 없는 글자만 저장돼요. 키 파일을 잃어버리면 복구할 수 없어요." }),
-        h("button", { textContent: "공유 냉장고 만들기", style: "width:100%", onclick: async () => { await createRoom(); renderSettings(); render(); } }),
-        h("button", { className: "ghost", textContent: "키 파일로 참여하기", style: "width:100%;margin-top:8px", onclick: () => keyFile.click() }), keyFile]] : "",
-    h("h3", { textContent: "데이터" }),
+        h("div", { className: "note", textContent: t("shareNote") }),
+        h("button", { textContent: t("createShared"), style: "width:100%", onclick: async () => { await createRoom(); renderSettings(); render(); } }),
+        h("button", { className: "ghost", textContent: t("joinKey"), style: "width:100%;margin-top:8px", onclick: () => keyFile.click() }), keyFile]] : "",
+    h("h3", { textContent: t("hData") }),
     h("div", { className: "note" },
-      h("div", { textContent: sync ? "① 공유 중이라 데이터가 암호화돼서 서버에도 저장돼요. 이 기기에도 복사본이 있어요." : "① 데이터는 이 기기 브라우저에만 저장돼요. 사이트 데이터를 지우면 사라져요." }),
-      h("div", { textContent: "② 가족과 나누려면 '내보내기'로 만든 파일을 카톡·메일로 보내고, 받는 사람이 '불러오기'를 해요. (받는 사람 기기의 기존 데이터는 바뀌어요.)" }),
-      h("div", { textContent: "③ 가끔 내보내기로 백업해 두세요." }),
-      h("div", { textContent: "홈 화면에 추가하면 앱처럼 바로 열려요: 공유 → 홈 화면에 추가", style: "margin-top:8px" })),
-    h("button", { className: "ghost", textContent: "데이터 내보내기 (파일 저장)", style: "width:100%", onclick: () => download("fridgey-data.json", JSON.stringify(data, null, 2)) }),
-    h("button", { className: "ghost", textContent: "데이터 불러오기", style: "width:100%;margin-top:8px", onclick: () => file.click() }), file,
-    h("h3", { textContent: "도움말" }),
+      h("div", { textContent: t("data1", !!sync) }),
+      h("div", { textContent: t("data2") }),
+      h("div", { textContent: t("data3") }),
+      h("div", { textContent: t("homeScreen"), style: "margin-top:8px" })),
+    h("button", { className: "ghost", textContent: t("export"), style: "width:100%", onclick: () => download("fridgey-data.json", JSON.stringify(data, null, 2)) }),
+    h("button", { className: "ghost", textContent: t("import"), style: "width:100%;margin-top:8px", onclick: () => file.click() }), file,
+    h("h3", { textContent: t("hHelp") }),
     h("div", { className: "meta", textContent: guideState() }),
-    h("button", { className: "ghost", textContent: "설명 보기", style: "width:100%;margin-top:8px", onclick: () => openGuide(true) }),
-    guideHidden() ? h("button", { className: "ghost", textContent: "시작할 때 다시 보이기", style: "width:100%;margin-top:8px", onclick() { store.set(GUIDE, ""); renderSettings(); } }) : "",
+    h("button", { className: "ghost", textContent: t("showGuide"), style: "width:100%;margin-top:8px", onclick: () => openGuide(true) }),
+    guideHidden() ? h("button", { className: "ghost", textContent: t("reshow"), style: "width:100%;margin-top:8px", onclick() { store.set(GUIDE, ""); renderSettings(); } }) : "",
     binSection(),
     h("details", { style: "margin-top:18px", open: wordsOpen, ontoggle() { wordsOpen = this.open; } },
-      h("summary", { textContent: `자동완성 단어 (${Object.keys(data.words).length}개) — 잘못 들어간 건 ✕로 지워요`, style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--main);padding:10px 0" }),
+      h("summary", { textContent: t("wordsSummary", Object.keys(data.words).length), style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--main);padding:10px 0" }),
       Object.keys(data.words).length ? Object.keys(data.words).sort((a, b) => data.words[b] - data.words[a]).map(w => h("div", { className: "row", style: "margin-bottom:6px" },
-        h("div", { className: "grow name", textContent: `${w} · ${data.words[w]}번` }),
-        h("button", { className: "ghost x", textContent: "✕", "aria-label": `${w} 자동완성에서 지우기`, style: "padding:8px 12px;min-width:44px", onclick() { delete data.words[w]; save(); renderSettings(); } })))
-        : h("div", { className: "meta", textContent: "재료나 장보기를 추가하면 여기에 쌓여요." })),
+        h("div", { className: "grow name", textContent: t("wordCount", w, data.words[w]) }),
+        h("button", { className: "ghost x", textContent: "✕", "aria-label": t("wordDelAria", w), style: "padding:8px 12px;min-width:44px", onclick() { delete data.words[w]; save(); renderSettings(); } })))
+        : h("div", { className: "meta", textContent: t("wordsEmpty") })),
     h("details", { style: "margin-top:18px" },
-      h("summary", { textContent: "이름 바꾸기 — 비워 두면 기본 이름이에요", style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--main);padding:10px 0" }),
+      h("summary", { textContent: t("renameSummary"), style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--main);padding:10px 0" }),
       Object.keys(DEFAULT_LABELS).map(k => h("div", {},
-        h("label", { textContent: LABEL_HELP[k], htmlFor: "sl-" + k }),
-        h("input", { id: "sl-" + k, value: data.labels[k] ?? "", placeholder: DEFAULT_LABELS[k], maxLength: 20, oninput() { data.labels[k] = this.value; save(); applyLabels(); } })))));
+        h("label", { textContent: t("help")[k], htmlFor: "sl-" + k }),
+        h("input", { id: "sl-" + k, value: data.labels[k] ?? "", placeholder: DEF[LANG][k], maxLength: 20, oninput() { data.labels[k] = this.value; save(); applyLabels(); } })))));
 }
 function delZone(z) {
-  if (data.zones.length <= 1) return alert("구역은 최소 1개 있어야 해요.");
+  if (data.zones.length <= 1) return alert(t("zoneMin"));
   const n = data.items.filter(i => i.zone === z.id).length;
-  if (!confirm(n ? `"${z.name}"의 재료 ${n}개는 첫 번째 구역으로 옮겨져요. 삭제할까요?` : `"${z.name}"을(를) 삭제할까요?`)) return;
+  if (!confirm(t("zoneDelConfirm", z.name, n))) return;
   data.zones = data.zones.filter(x => x !== z);
   data.items.forEach(i => { if (i.zone === z.id) i.zone = data.zones[0].id; });
   if (zoneId === z.id) { zoneId = data.zones[0].id; savePref(); }
@@ -811,7 +971,7 @@ function delZone(z) {
 }
 $("gear").onclick = openSettings;
 $("sClose").onclick = () => $("sDlg").close();
-$("sDlg").onclose = () => { data.zones.forEach(z => { if (!z.name.trim()) z.name = "구역"; }); save(); render(); };
+$("sDlg").onclose = () => { data.zones.forEach(z => { if (!z.name.trim()) z.name = t("zone"); }); save(); render(); };
 document.onvisibilitychange = () => {
   if (document.hidden) return;
   if (day !== new Date().toDateString() && !document.querySelector("dialog[open]")) render();
@@ -838,11 +998,11 @@ window.onpopstate = e => {
 history.replaceState({ tab }, "");
 
 if (typeof window.HTMLDialogElement?.prototype.showModal !== "function" || !Element.prototype.replaceChildren) {
-  document.body.textContent = "최신 브라우저에서 열어 주세요.";
+  document.body.textContent = t("oldBrowser");
 } else {
   try { render(); } catch {
     if (rawData) store.set("fridgey.corrupt", rawData);
-    data = normalize(null); zoneId = data.zones[0].id; showNotice("저장된 데이터에 문제가 있어 새로 시작했어요."); render();
+    data = normalize(null); zoneId = data.zones[0].id; showNotice(t("resetData")); render();
   }
   try { navigator.storage?.persist?.(); } catch {}
   (async () => {
