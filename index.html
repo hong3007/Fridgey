@@ -695,13 +695,16 @@ function processItem(it) {   // 냉장고 → 음쓰통(최근 것이 위, 최�
 $("eDel").onclick = () => { const it = editing; $("eDlg").close(); processItem(it); };
 function binSection() {   // 설정 안 음쓰통: 처리한 재료(최근 것부터), 되돌리기
   return h("details", { style: "margin-top:18px", open: binOpen, ontoggle() { binOpen = this.open; } },
-    h("summary", { textContent: `${L("tabBin")} (${data.bin.length}개) — ${L("doneBtn")}한 재료, 되돌릴 수 있어요`, style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--main);padding:10px 0" }),
+    h("summary", { textContent: `${L("tabBin")} (${data.bin.length}개) — ${L("doneBtn")}한 재료, 되돌리거나 지울 수 있어요`, style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--main);padding:10px 0" }),
     h("div", { className: "meta", textContent: `최근 ${MAX_BIN}개까지 보관돼요.`, style: "margin-bottom:6px" }),
     data.bin.length ? data.bin.map(b => h("div", { className: "row", style: "padding:8px 0;border-top:1px solid var(--line)" },
       h("div", { className: "grow" },
         h("div", { className: "name", textContent: b.name + (b.qty !== "1" ? ` ×${b.qty}` : "") }),
         h("div", { className: "meta", textContent: [zoneName(b.zone), b.date && `${kindLabel(b.kind)} ${fmtDate(b.date)}`, b.binAt && `${+b.binAt.slice(5, 7)}/${+b.binAt.slice(8)} ${L("doneBtn")}`].filter(Boolean).join(" · ") })),
-      h("button", { className: "ghost done", textContent: "되돌리기", "aria-label": `${b.name} 되돌리기`, onclick() { restoreItem(b); renderSettings(); } })))
+      h("button", { className: "ghost done", textContent: "되돌리기", "aria-label": `${b.name} 되돌리기`, onclick() { restoreItem(b); renderSettings(); } }),
+      h("button", { className: "danger done", textContent: "지우기", "aria-label": `${b.name} 완전히 지우기`, onclick() {   // 음쓰통에서 아예 지움(되돌릴 수 없음)
+        if (confirm(`‘${b.name}’을(를) 완전히 지울까요? 되돌릴 수 없어요.`)) { data.bin = data.bin.filter(x => x !== b); save(); renderSettings(); }
+      } })))
       : h("div", { className: "meta", textContent: `아직 비어 있어요. ${L("tabFridge")}에서 ${L("doneBtn")}을 누르면 여기로 와요.` }));
 }
 
