@@ -126,6 +126,7 @@ main>div>.sugg{margin:-2px 0 8px}
 .gate strong{color:var(--red)}
 .gate .big{width:100%;min-height:60px;font-size:19px;margin-top:20px}
 .gate .ghost{width:100%;margin-top:12px}
+button.done{flex:none;padding:3px 10px;min-height:30px;font-size:13px;border-width:1px;border-radius:8px}
 .hide{display:none!important}
 .err{font-size:14px;color:var(--red);margin-top:4px}
 .err:empty{display:none}
@@ -213,7 +214,7 @@ function parseDate(text, kind = "exp", now = new Date()) {
   const mk = yy => Date.UTC(yy, m - 1, d);
   const valid = yy => { const dt = new Date(mk(yy)); return dt.getUTCFullYear() === yy && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d; };
   if (y === undefined) {
-    // 월일만 입력: 유통기한은 오늘 이후 첫 유효일(지났으면 내년…), 요리일은 오늘 이전 가장 가까운 유효일. 윤일(0229)을 위해 최대 8년 탐색
+    // 월일만 입력: 유통기한은 오늘 이후 첫 유효일(지났으면 내년…), 기준일은 오늘 이전 가장 가까운 유효일. 윤일(0229)을 위해 최대 8년 탐색
     const cook = kind === "cook";
     for (let i = 0; i <= 8 && y === undefined; i++) {
       const yy = now.getFullYear() + (cook ? -i : i);
@@ -232,13 +233,13 @@ function daysLeft(date, now = new Date()) {
   return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())) / 864e5);
 }
 
-// 표시 문구·단계(level)·정렬키(key, 작을수록 급함). kind: "exp"=유통기한, "cook"=요리일(4일 지나면 위험).
+// 표시 문구·단계(level)·정렬키(key, 작을수록 급함). kind: "exp"=유통기한, "cook"=기준일(그날부터 며칠 지났나, 4일 지나면 위험).
 function status(it, now = new Date()) {
   const n = daysLeft(it.date, now);
   if (n === null) return { label: "", level: "none", key: 1e9 };
   if (it.kind === "cook") {
     const e = Math.max(0, -n);
-    return { label: e === 0 ? "오늘 요리" : `${e}일 경과`, level: e >= 4 ? "red" : e >= 3 ? "orange" : "ok", key: 4 - e };
+    return { label: e === 0 ? "오늘" : `${e}일 경과`, level: e >= 4 ? "red" : e >= 3 ? "orange" : "ok", key: 4 - e };
   }
   return { label: n < 0 ? `${-n}일 지남` : n === 0 ? "오늘까지" : `D-${n}`, level: n < 0 ? "expired" : n <= 3 ? "red" : n <= 7 ? "orange" : "ok", key: n };
 }
@@ -312,8 +313,8 @@ function parseKeyFile(text) {
 // </core>
 
 // ---- 데이터 ----
-const DEFAULT_LABELS = { title: "Fridgey", tabFridge: "냉장고", tabShop: "장보기", fName: "음식명", fDate: "유통기한", fCook: "요리일", fQty: "수량", addBtn: "추가" };
-const LABEL_HELP = { title: "앱 이름", tabFridge: "첫 번째 탭 이름", tabShop: "두 번째 탭 이름", fName: "음식 입력칸 이름", fDate: "유통기한 입력칸 이름", fCook: "요리일 입력칸 이름", fQty: "수량 입력칸 이름", addBtn: "추가 버튼 이름" };
+const DEFAULT_LABELS = { title: "Fridgey", tabFridge: "냉장고", tabShop: "장보기", fName: "음식명", fDate: "유통기한", fCook: "기준일", fQty: "수량", addBtn: "추가", tabBin: "음쓰통", doneBtn: "처리" };
+const LABEL_HELP = { title: "앱 이름", tabFridge: "첫 번째 탭 이름", tabShop: "두 번째 탭 이름", fName: "음식 입력칸 이름", fDate: "유통기한 입력칸 이름", fCook: "기준일 입력칸 이름", fQty: "수량 입력칸 이름", addBtn: "추가 버튼 이름", tabBin: "음쓰통 이름 (설정 안)", doneBtn: "처리 버튼 이름" };
 const DEFAULT_ZONES = ["1층", "2층", "3층"];
 const LS = "fridgey.data";
 const store = {
@@ -322,7 +323,7 @@ const store = {
 };
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 const qty = v => String(v ?? "").trim().slice(0, 20) || "1";
-const MAX_ZONES = 20, MAX_ROWS = 300, MAX_WORDS = 200;   // 재료·장보기 각각. 한글 40자 이름이 꽉 차도 암호문이 서버 한도(256KB, supabase.sql)를 넘지 않는 크기
+const MAX_ZONES = 20, MAX_ROWS = 300, MAX_WORDS = 200, MAX_BIN = 100;   // 재료·장보기 각각. 한글 40자 이름이 꽉 차도 암호문이 서버 한도(256KB, supabase.sql)를 넘지 않는 크기
 
 function normalize(d) {
   const o = { labels: {}, zones: [], items: [], shop: [] };
@@ -339,6 +340,12 @@ function normalize(d) {
   for (const s of Array.isArray(d.shop) ? d.shop : []) {
     if (!s || typeof s.name !== "string" || !s.name.trim() || o.shop.length >= MAX_ROWS) continue;
     o.shop.push({ id: String(s.id || uid()), name: s.name.slice(0, 40), qty: qty(s.qty), done: !!s.done });
+  }
+  o.bin = [];   // 음쓰통: 처리한 재료(최근 것부터, 최대 MAX_BIN). 되돌리기로 냉장고에 복구
+  for (const i of Array.isArray(d.bin) ? d.bin : []) {
+    if (!i || typeof i.name !== "string" || !i.name.trim() || o.bin.length >= MAX_BIN) continue;
+    const ok = v => typeof v === "string" && parseDate(v) === v;
+    o.bin.push({ id: String(i.id || uid()), name: i.name.slice(0, 40), qty: qty(i.qty), zone: String(i.zone ?? ""), date: ok(i.date) ? i.date : "", kind: i.kind === "cook" ? "cook" : "exp", binAt: ok(i.binAt) ? i.binAt : "" });
   }
   o.theme = ["mint", "pink", "white", "purple", "blue"].includes(d.theme) ? d.theme : "mint";   // 테마(냉장고마다 공유). 목록은 <head>의 SKINS 와 같게
   o.words = Object.create(null);   // 자동완성(이 냉장고에서 쓴 이름과 횟수). __proto__ 같은 이름도 안전하게
@@ -474,7 +481,8 @@ function keyGate() {
         if (await shareKey()) finish(); else msg.textContent = "보관이 끝나야 다음으로 넘어가요. 다시 눌러 주세요.";
       } }),
       h("button", { className: "ghost", textContent: "이미 받은 키 파일이 있어요 (참여하기)", onclick: () => file.click() }), file);
-    $("kDlg").showModal();
+    $("kDlg").onclose = () => { if (store.get("fridgey.keysaved") !== sync?.id) setTimeout(() => openDlg($("kDlg")), 0); };   // 폰 뒤로가기가 창을 직접 닫아도 보관 전이면 다시 연다
+    openDlg($("kDlg"));
   });
 }
 $("kDlg").oncancel = e => e.preventDefault();   // 뒤로가기·Esc 로 닫히지 않게
@@ -490,6 +498,7 @@ function guideState() {
   return "시작할 때 사용법 안내: 보임";
 }
 function openGuide(fromSettings) {
+  guideLocked = !fromSettings;   // 시작 안내는 두 선택지 중 하나로만 닫힘(뒤로가기 무시)
   fillTo($("gBody"),
     h("div", { className: "note" },
       h("div", { textContent: `① ${L("fName")}을(를) 쓰고 날짜(예: 261020)를 넣은 뒤 ${L("addBtn")}. 글자를 치면 자주 쓴 이름이 떠서 누르면 바로 들어가요.` }),
@@ -504,7 +513,7 @@ function openGuide(fromSettings) {
     ? h("button", { type: "button", textContent: "닫기", onclick: () => $("gDlg").close() })
     : [h("button", { type: "button", className: "ghost", textContent: "7일간 보지 않기", onclick: () => hide(7) }),
        h("button", { type: "button", className: "ghost", textContent: "다시 보지 않기", onclick: () => hide(0) })]);
-  $("gDlg").showModal();
+  openDlg($("gDlg"));
 }
 $("gDlg").oncancel = e => e.preventDefault();   // 시작 안내는 두 선택지 중 하나로 닫는다(뒤로가기·Esc로 닫히지 않게)
 $("gDlg").onclose = () => { if ($("sDlg").open) renderSettings(); };
@@ -528,6 +537,7 @@ function download(name, text) {
 function applyLabels() {
   $("title").textContent = L("title"); document.title = L("title");
   $("tabFridge").textContent = L("tabFridge"); $("tabShop").textContent = L("tabShop");
+  $("eDel").textContent = L("doneBtn");
   for (const b of $("nav").children) { b.classList.toggle("on", b.dataset.tab === tab); b.dataset.tab === tab ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"); }
   refreshFridgeBar();
   $("eNameL").textContent = L("fName"); $("eDateL").textContent = L("fDate") + " / " + L("fCook"); $("eQtyL").textContent = L("fQty");
@@ -607,7 +617,8 @@ function renderFridgeList() {
           h("div", { className: "grow", style: "flex:1;min-width:0" },
             h("div", { className: "name", textContent: i.name + (i.qty !== "1" ? ` ×${i.qty}` : "") }),
             h("div", { className: "meta", textContent: i.date ? `${kindLabel(i.kind)} ${fmtDate(i.date)}` : "" })),
-          s.label ? h("span", { className: "badge " + s.level, textContent: s.label }) : "");
+          s.label ? h("span", { className: "badge " + s.level, textContent: s.label }) : "",
+          h("button", { className: "ghost done", textContent: L("doneBtn"), "aria-label": `${i.name} ${L("doneBtn")} (${L("tabBin")}으로)`, onclick(e) { e.stopPropagation(); processItem(i); }, onkeydown(e) { e.stopPropagation(); } }));
       }) : h("div", { className: "meta", textContent: "비어 있음" }));
   }));
 }
@@ -652,7 +663,7 @@ function openEdit(it) {
   editing = it;
   $("eName").value = it.name; $("eDate").value = fmtDate(it.date); $("eDate").classList.remove("bad"); $("eErr").textContent = "";
   $("eKind").value = it.kind; $("eQty").value = it.qty; fillZones($("eZone"), it.zone);
-  $("eDlg").showModal(); $("eCancel").focus();   // 폰 키보드가 바로 뜨지 않게
+  openDlg($("eDlg")); $("eCancel").focus();   // 폰 키보드가 바로 뜨지 않게
 }
 $("eDate").oninput = () => { $("eDate").classList.remove("bad"); $("eErr").textContent = ""; };
 $("eForm").onsubmit = e => {
@@ -664,13 +675,35 @@ $("eForm").onsubmit = e => {
   save(); $("eDlg").close(); render();
 };
 $("eCancel").onclick = () => $("eDlg").close();
+// ---- 처리(음쓰통으로) / 되돌리기 ----
+const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+function restoreItem(it) {   // 음쓰통 → 냉장고(구역이 지워졌으면 첫 구역)
+  data.bin = data.bin.filter(x => x !== it);
+  const { binAt, ...back } = it;
+  data.items.push({ ...back, zone: data.zones.some(z => z.id === it.zone) ? it.zone : data.zones[0].id });
+  save();
+}
 let undoTimer;
-$("eDel").onclick = () => {
-  const it = editing;
-  data.items = data.items.filter(x => x !== it); save(); $("eDlg").close(); render();
-  fb.msg.replaceChildren(`‘${it.name}’ 삭제됨 · `, h("a", { href: "#", textContent: "실행취소", style: "color:var(--main);font-weight:600;padding:10px 4px", onclick(e) { e.preventDefault(); data.items.push(it); save(); render(); } }));
+function processItem(it) {   // 냉장고 → 음쓰통(최근 것이 위, 최대 MAX_BIN 개)
+  data.items = data.items.filter(x => x !== it);
+  const b = { ...it, binAt: todayISO() };
+  data.bin = [b, ...data.bin].slice(0, MAX_BIN);
+  save(); render();
+  fb.msg.replaceChildren(`‘${it.name}’ ${L("tabBin")}으로(⚙에서 볼 수 있어요) · `, h("a", { href: "#", textContent: "되돌리기", style: "color:var(--main);font-weight:600;padding:10px 4px", onclick(e) { e.preventDefault(); if (data.bin.includes(b)) restoreItem(b); render(); } }));
   clearTimeout(undoTimer); undoTimer = setTimeout(() => { if (fb.msg.querySelector("a")) fb.msg.textContent = ""; }, 8000);
-};
+}
+$("eDel").onclick = () => { const it = editing; $("eDlg").close(); processItem(it); };
+function binSection() {   // 설정 안 음쓰통: 처리한 재료(최근 것부터), 되돌리기
+  return h("details", { style: "margin-top:18px", open: binOpen, ontoggle() { binOpen = this.open; } },
+    h("summary", { textContent: `${L("tabBin")} (${data.bin.length}개) — ${L("doneBtn")}한 재료, 되돌릴 수 있어요`, style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--main);padding:10px 0" }),
+    h("div", { className: "meta", textContent: `최근 ${MAX_BIN}개까지 보관돼요.`, style: "margin-bottom:6px" }),
+    data.bin.length ? data.bin.map(b => h("div", { className: "row", style: "padding:8px 0;border-top:1px solid var(--line)" },
+      h("div", { className: "grow" },
+        h("div", { className: "name", textContent: b.name + (b.qty !== "1" ? ` ×${b.qty}` : "") }),
+        h("div", { className: "meta", textContent: [zoneName(b.zone), b.date && `${kindLabel(b.kind)} ${fmtDate(b.date)}`, b.binAt && `${+b.binAt.slice(5, 7)}/${+b.binAt.slice(8)} ${L("doneBtn")}`].filter(Boolean).join(" · ") })),
+      h("button", { className: "ghost done", textContent: "되돌리기", "aria-label": `${b.name} 되돌리기`, onclick() { restoreItem(b); renderSettings(); } })))
+      : h("div", { className: "meta", textContent: `아직 비어 있어요. ${L("tabFridge")}에서 ${L("doneBtn")}을 누르면 여기로 와요.` }));
+}
 
 // ---- 장보기 → 냉장고 ----
 let moveRows = [];
@@ -685,7 +718,7 @@ function openMove() {
   $("mErr").textContent = "";
   $("mRows").replaceChildren(...moveRows.map(r => h("div", { style: "margin-top:10px" },
     h("div", { className: "name", textContent: r.s.name + (r.s.qty !== "1" ? ` ×${r.s.qty}` : "") }), r.date)));
-  $("mDlg").showModal(); moveRows[0]?.date.focus();
+  openDlg($("mDlg")); moveRows[0]?.date.focus();
 }
 $("mForm").onsubmit = e => {
   e.preventDefault();
@@ -700,8 +733,8 @@ $("mForm").onsubmit = e => {
 $("mCancel").onclick = () => $("mDlg").close();
 
 // ---- 설정 ----
-let wordsOpen = false;
-function openSettings() { renderSettings(); $("sDlg").showModal(); }
+let wordsOpen = false, binOpen = false;
+function openSettings() { renderSettings(); openDlg($("sDlg")); }
 const BAD_FILE = "이 파일은 Fridgey에서 내보낸 데이터가 아닌 것 같아요. '데이터 내보내기'로 저장한 .json 파일을 골라 주세요.";
 function renderSettings() {
   const file = h("input", { type: "file", accept: ".json,application/json", className: "hide" });
@@ -751,6 +784,7 @@ function renderSettings() {
     h("div", { className: "meta", textContent: guideState() }),
     h("button", { className: "ghost", textContent: "설명 보기", style: "width:100%;margin-top:8px", onclick: () => openGuide(true) }),
     guideHidden() ? h("button", { className: "ghost", textContent: "시작할 때 다시 보이기", style: "width:100%;margin-top:8px", onclick() { store.set(GUIDE, ""); renderSettings(); } }) : "",
+    binSection(),
     h("details", { style: "margin-top:18px", open: wordsOpen, ontoggle() { wordsOpen = this.open; } },
       h("summary", { textContent: `자동완성 단어 (${Object.keys(data.words).length}개) — 잘못 들어간 건 ✕로 지워요`, style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--main);padding:10px 0" }),
       Object.keys(data.words).length ? Object.keys(data.words).sort((a, b) => data.words[b] - data.words[a]).map(w => h("div", { className: "row", style: "margin-bottom:6px" },
@@ -781,7 +815,24 @@ document.onvisibilitychange = () => {
   syncNow();
 };
 setInterval(() => { if (!document.hidden) syncNow(); }, 30000);
-$("nav").onclick = e => { const t = e.target.closest("button")?.dataset.tab; if (t) { tab = t; render(); } };
+$("nav").onclick = e => { const t = e.target.closest("button")?.dataset.tab; if (t && t !== tab) { tab = t; history.pushState({ tab }, ""); render(); } };
+
+// ---- 폰 뒤로가기: 열린 창이 있으면 닫고, 없으면 이전 탭으로. 키 보관 창·시작 안내는 고르기 전엔 안 닫힘 ----
+let ignorePop = false, guideLocked = false;
+function openDlg(d) { d.showModal(); history.pushState({ dlg: d.id, tab }, ""); }
+for (const d of document.querySelectorAll("dialog"))   // 버튼으로 닫으면 쌓아 둔 뒤로가기 한 칸을 같이 지운다
+  d.addEventListener("close", () => { if (history.state?.dlg === d.id) { ignorePop = true; history.back(); } });
+window.onpopstate = e => {
+  if (ignorePop) { ignorePop = false; return; }
+  const open = [...document.querySelectorAll("dialog[open]")].pop();
+  if (open) {
+    if (open.id === "kDlg" || (open.id === "gDlg" && guideLocked)) history.pushState({ dlg: open.id, tab }, "");
+    else open.close();
+    return;
+  }
+  if (e.state?.tab && e.state.tab !== tab) { tab = e.state.tab; render(); }
+};
+history.replaceState({ tab }, "");
 
 if (typeof window.HTMLDialogElement?.prototype.showModal !== "function" || !Element.prototype.replaceChildren) {
   document.body.textContent = "최신 브라우저에서 열어 주세요.";
