@@ -15,7 +15,7 @@ No install, no sign-up: just open the link. You can also share **the same fridge
 - **Most urgent first.** Items are sorted by expiry date, and the days left are color-coded.
 - **Shopping list.** Set a quantity, check off what you bought, and move it all into the fridge at once.
 - **Share it.** Everyone holding the key file sees the same fridge. Changes usually show up on the other phone within 30 seconds.
-- **Make it yours.** Rename sections (Shelf 1, Shelf 2, …) and every label, pick one of 5 themes, and switch between **English and Korean** in Settings.
+- **Make it yours.** Rename sections (Shelf 1, Shelf 2, …) and the app, tab, field and button names, pick one of 5 themes, and switch between **English and Korean** in Settings.
 - **Mistakes are fine.** Tap "Done" on an item you finished; it goes to the Bin, where you can restore it.
 
 ## Getting started
@@ -37,23 +37,22 @@ To share, send your saved key file to the other person. They open the link and t
 
 - What you enter is **encrypted on your phone** and then backed up to a server (the free storage service [Supabase](https://supabase.com)).
 - The server only holds **unreadable ciphertext**. The **key file never goes to the server**, so even the server owner can't see your items.
-- **Anyone with the key file** can read and edit the fridge, so check who you send it to.
+- **Anyone with the key file** (including anyone who can access the messenger or cloud account where you keep it) can read and edit the fridge, so check who you send it to.
 - Every fridge has its own key, so other people using the same app link never see each other's fridges.
 - This repository (GitHub) contains **only the app code**, no user data.
 
 ## Good to know
 
-- **If you lose the key file, the fridge can't be recovered.** Not even its creator can open it.
+- **If you lose both the key file and the key stored on your devices, the fridge can't be recovered.** Not even its creator can open it.
 - Clearing your browser's cookies/site data also removes the key from your phone. Join again with your saved key file to bring everything back.
 - Up to 300 fridge items and 300 shopping items; the Bin keeps the latest 100.
-- It runs on a free service, so syncing may be delayed if the server is paused. You can also back up a file with **Export data** in Settings.
-- Dates are always entered as YYMMDD (e.g. `261020` for 2026-10-20).
+- It runs on a free service, so if the server is paused, syncing stops until it's back; each phone keeps working on its own. You can also back up your data to a file with **Export data** in Settings (the exported file is not encrypted, so keep it somewhere safe).
 
 ## Tech notes (for the curious)
 
 - Runs from **a single `index.html` file** with no build step. No external libraries; only the font (Gowun Dodum) is loaded from Google Fonts.
 - Hosted on GitHub Pages.
-- Encryption uses the browser's built-in WebCrypto (AES-GCM). The key is used to derive a room ID and an encryption key separately. The server stores only the room ID and the ciphertext; its table can't be read or written directly, and only two read/write functions are exposed.
+- Encryption uses the browser's built-in WebCrypto (AES-GCM). From the key file, the app derives two separate values: a room ID and an encryption key. The server stores only the room ID and the ciphertext; its table can't be read or written directly, and only two read/write functions are exposed.
 - The server-side setup is managed separately by the app's maker, not in this repository.
 
 ## License
