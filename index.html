@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0e8a86">
-<meta name="theme-color" content="#0d1a1a" media="(prefers-color-scheme:dark)">
+<meta name="theme-color" content="#fafafa" media="(prefers-color-scheme:light)">
+<meta name="theme-color" content="#fafafa" media="(prefers-color-scheme:dark)">
 <title>Fridgey</title>
 <script>
 // 테마는 화면이 그려지기 전에 적용한다(기본 테마가 잠깐 보였다가 바뀌지 않게). data.theme 과 같은 값을 fridgey.skin 에 따로 둔다.
-var SKINS = { mint: ["민트", "#0e8a86", "#0d1a1a"], pink: ["핑크", "#d1127a", "#1c0b14"], white: ["화이트", "#ffffff", "#ffffff"], purple: ["퍼플", "#6d28d9", "#120b22"], blue: ["블루", "#1d5fd6", "#0a1222"] };
+var SKINS = { white: ["화이트", "#fafafa", "#fafafa", "#ffffff"], mint: ["민트", "#f0faf6", "#0d1a1a", "#bfe8d8"], pink: ["핑크", "#fff4f8", "#1c0b14", "#f8cfe0"], purple: ["퍼플", "#f7f3ff", "#120b22", "#ddd0f7"], blue: ["블루", "#f2f7ff", "#0a1222", "#c9dcfa"] };
 function applySkin(s) {
-  if (!SKINS[s]) s = "mint";
+  if (!Object.prototype.hasOwnProperty.call(SKINS, s)) s = "white";
   document.documentElement.dataset.skin = s;
   var m = document.querySelectorAll('meta[name="theme-color"]');   // 폰 상단 상태바 색
   if (m[0]) m[0].content = SKINS[s][1];
@@ -30,17 +30,18 @@ function applySkin(s) {
 <link rel="icon" type="image/png" href="data:image/png;base64,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">
 <link rel="apple-touch-icon" href="data:image/png;base64,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">
 <style>
-:root{--bg:#f4f8f8;--card:#fff;--ink:#12302f;--sub:#5c7776;--line:#dbe7e6;--field:#769594;--main:#0b7571;--main-ink:#fff;--red:#c62828;--orange:#b45f00;--ok:#1f7a4d;--radius:14px;--shadow:0 1px 2px rgba(18,48,47,.07);color-scheme:light dark}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0d1a1a;--card:#152626;--ink:#e6f2f1;--sub:#8fb0ae;--line:#2c4a49;--field:#4f7371;--main:#2bb5b0;--main-ink:#06201f;--red:#ff6b6b;--orange:#ffa94d;--ok:#51cf8f;--shadow:0 0 0 transparent}}
-/* 테마(data-skin, 냉장고마다 공유). 민트=기본(위). 화이트는 다크 모드에서도 밝게. 대비는 WCAG AA 확인함 */
-:root[data-skin=pink]{--bg:#fff0f6;--card:#fff;--ink:#3a0d25;--sub:#8c4569;--line:#f6d2e3;--field:#c06a94;--main:#d1127a;--main-ink:#fff;--shadow:0 1px 2px rgba(58,13,37,.08)}
-:root[data-skin=purple]{--bg:#f5f0ff;--card:#fff;--ink:#22113f;--sub:#6a5a8c;--line:#e3d9fa;--field:#8f7bbf;--main:#6d28d9;--main-ink:#fff;--shadow:0 1px 2px rgba(34,17,63,.08)}
-:root[data-skin=blue]{--bg:#eff5ff;--card:#fff;--ink:#0b1f3f;--sub:#4f6386;--line:#d6e4fb;--field:#7189b3;--main:#1d5fd6;--main-ink:#fff;--shadow:0 1px 2px rgba(11,31,63,.08)}
-:root[data-skin=white]{--bg:#fafafa;--card:#fff;--ink:#1d1d1f;--sub:#6e6e73;--line:#e5e5ea;--field:#8e8e93;--main:#1d1d1f;--main-ink:#fff;--red:#c62828;--orange:#b45f00;--ok:#1f7a4d;--shadow:0 1px 2px rgba(0,0,0,.06);color-scheme:light}
+:root{--bg:#f0faf6;--card:#fff;--ink:#16332b;--sub:#4f6d64;--line:#d7efe6;--field:#679083;--main:#bfe8d8;--main-ink:#123a2e;--accent:#2c7a62;--red:#c62828;--orange:#b45f00;--ok:#1f7a4d;--radius:14px;--shadow:0 1px 2px rgba(22,51,43,.07);color-scheme:light dark}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0d1a1a;--card:#152626;--ink:#e6f2f1;--sub:#8fb0ae;--line:#2c4a49;--field:#4f7371;--main:#9fdcc6;--main-ink:#0d2e24;--accent:#9fdcc6;--red:#ff6b6b;--orange:#ffa94d;--ok:#51cf8f;--shadow:0 0 0 transparent}}
+/* 테마: 파스텔(냉장고마다 공유). 화이트=기본, 다크 모드에서도 밝게. 민트=:root 기본값.
+   --main = 버튼·선택 면(파스텔), --main-ink = 그 위 글자, --accent = 글자·링크·테두리용 진한 색. 대비는 WCAG AA 확인함 */
+:root[data-skin=white]{--bg:#fafafa;--card:#fff;--ink:#1f1f24;--sub:#66666e;--line:#ebebef;--field:#8c8c96;--main:#e8e6f0;--main-ink:#26242e;--accent:#4a4757;--red:#c62828;--orange:#b45f00;--ok:#1f7a4d;--shadow:0 1px 2px rgba(0,0,0,.06);color-scheme:light}
+:root[data-skin=pink]{--bg:#fff4f8;--card:#fff;--ink:#3b1a28;--sub:#7d5466;--line:#f8dbe7;--field:#ad7390;--main:#f8cfe0;--main-ink:#4a1631;--accent:#a8406f;--shadow:0 1px 2px rgba(59,26,40,.07)}
+:root[data-skin=purple]{--bg:#f7f3ff;--card:#fff;--ink:#26193f;--sub:#655a80;--line:#e6defa;--field:#887ab0;--main:#ddd0f7;--main-ink:#2e1a52;--accent:#6a4bb5;--shadow:0 1px 2px rgba(38,25,63,.07)}
+:root[data-skin=blue]{--bg:#f2f7ff;--card:#fff;--ink:#13243f;--sub:#52627e;--line:#d9e6fa;--field:#6f88b3;--main:#c9dcfa;--main-ink:#10284d;--accent:#2f62b3;--shadow:0 1px 2px rgba(19,36,63,.07)}
 @media(prefers-color-scheme:dark){
-  :root[data-skin=pink]:not([data-theme=light]){--bg:#1c0b14;--card:#2a1220;--ink:#ffe6f2;--sub:#e3a3c3;--line:#4d2238;--field:#9a5b7b;--main:#ff63b1;--main-ink:#2a0617;--shadow:0 0 0 transparent}
-  :root[data-skin=purple]:not([data-theme=light]){--bg:#120b22;--card:#1d1433;--ink:#efe8ff;--sub:#b3a3d9;--line:#352a55;--field:#6e5f99;--main:#a78bfa;--main-ink:#1a0d33;--shadow:0 0 0 transparent}
-  :root[data-skin=blue]:not([data-theme=light]){--bg:#0a1222;--card:#111d33;--ink:#e6efff;--sub:#9fb3d6;--line:#26385a;--field:#5b7299;--main:#5b9dff;--main-ink:#08172e;--shadow:0 0 0 transparent}
+  :root[data-skin=pink]:not([data-theme=light]){--bg:#1c0b14;--card:#2a1220;--ink:#ffe6f2;--sub:#e3a3c3;--line:#4d2238;--field:#9a5b7b;--main:#f4a7c8;--main-ink:#3a0f24;--accent:#f4a7c8;--shadow:0 0 0 transparent}
+  :root[data-skin=purple]:not([data-theme=light]){--bg:#120b22;--card:#1d1433;--ink:#efe8ff;--sub:#b3a3d9;--line:#352a55;--field:#6e5f99;--main:#c4b0f5;--main-ink:#24133f;--accent:#c4b0f5;--shadow:0 0 0 transparent}
+  :root[data-skin=blue]:not([data-theme=light]){--bg:#0a1222;--card:#111d33;--ink:#e6efff;--sub:#9fb3d6;--line:#26385a;--field:#5b7299;--main:#a9c8fa;--main-ink:#0c2140;--accent:#a9c8fa;--shadow:0 0 0 transparent}
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -48,21 +49,21 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 "Gowun Dodum"
 header{display:flex;align-items:center;gap:12px;padding:12px 16px 8px;padding-top:calc(12px + env(safe-area-inset-top));max-width:560px;margin:0 auto}
 header svg{width:36px;height:36px;flex:none}
 header h1{font-size:22px;font-weight:800;letter-spacing:-.01em;margin:0;flex:1;min-width:0;overflow-wrap:anywhere}
-.gear{background:transparent;color:var(--main);font-size:22px;padding:6px 10px;min-width:44px;border-radius:50%}
+.gear{background:transparent;border-color:transparent;color:var(--accent);font-size:22px;padding:6px 10px;min-width:44px;border-radius:50%}
 main{padding:0 16px;max-width:560px;margin:0 auto}
 button,input,select{font:inherit;color:inherit}
-button{cursor:pointer;border:1.5px solid transparent;border-radius:10px;padding:10px 16px;background:var(--main);color:var(--main-ink);font-weight:600;min-height:44px;transition:filter .1s,background-color .1s}
+button{cursor:pointer;border:1.5px solid var(--accent);border-radius:10px;padding:10px 16px;background:var(--main);color:var(--main-ink);font-weight:600;min-height:44px;transition:filter .1s,background-color .1s}
 button:active{filter:brightness(.92)}
-button.ghost{background:transparent;color:var(--main);border-color:var(--main)}
+button.ghost{background:transparent;color:var(--accent);border-color:var(--accent)}
 button.danger{background:transparent;color:var(--red);border-color:var(--line)}
 button.x{border-color:transparent;color:var(--sub)}
 .actions .ghost{color:var(--ink);border-color:var(--field)}
 input,select{width:100%;padding:10px 12px;border:1.5px solid var(--field);border-radius:10px;background:var(--bg);min-height:44px}
 select{appearance:none;-webkit-appearance:none;padding-right:30px;background-image:linear-gradient(45deg,transparent 50%,var(--sub) 50%),linear-gradient(135deg,var(--sub) 50%,transparent 50%);background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%;background-size:5px 5px;background-repeat:no-repeat;text-overflow:ellipsis}
-input[type=checkbox]{padding:0;accent-color:var(--main)}
+input[type=checkbox]{padding:0;accent-color:var(--accent)}
 input::placeholder{color:var(--sub);opacity:1}
-input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible,a:focus-visible,.item:focus-visible{outline:2px solid var(--main);outline-offset:2px}
-input:focus-visible,select:focus-visible{border-color:var(--main)}
+input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible,a:focus-visible,.item:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input:focus-visible,select:focus-visible{border-color:var(--accent)}
 input.bad{border-color:var(--red);box-shadow:0 0 0 1px var(--red)}
 input.bad:focus-visible{outline-color:var(--red)}
 label{display:block;font-size:14px;font-weight:600;color:var(--sub);margin:14px 0 4px}
@@ -87,12 +88,12 @@ form.card button[type=submit]{min-width:72px}
 .item.orange{box-shadow:inset 3px 0 0 var(--orange)}
 .zone h2+.item,.card>.item:first-child{border-top:0}
 .zone>.meta{padding:8px 0 2px}
-.chip{flex:none;padding:8px 12px;min-height:44px;font-size:14px;background:var(--card);color:var(--main);border-color:var(--field);white-space:nowrap}
+.chip{flex:none;padding:8px 12px;min-height:44px;font-size:14px;background:var(--card);color:var(--accent);border-color:var(--field);white-space:nowrap}
 .empty{text-align:center;color:var(--sub);padding:32px 16px;line-height:1.6}
 nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
 nav button{flex:1;border-radius:0;border:0;background:transparent;color:var(--sub);min-height:56px;font-size:16px}
 nav button:focus-visible{outline-offset:-4px}
-nav button.on{color:var(--main);font-weight:800;box-shadow:inset 0 3px 0 var(--main)}
+nav button.on{color:var(--accent);font-weight:800;box-shadow:inset 0 3px 0 var(--accent)}
 dialog{border:1px solid var(--line);border-radius:var(--radius);background:var(--card);color:var(--ink);width:min(92vw,440px);max-height:90vh;max-height:90dvh;overflow:auto;padding:20px;box-shadow:0 8px 28px rgba(0,0,0,.25)}
 dialog::backdrop{background:rgba(0,0,0,.45)}
 dialog h2{margin:0 0 4px;font-size:20px}
@@ -115,7 +116,7 @@ dialog .note{background:var(--bg)}
 main>div>.sugg{margin:-2px 0 8px}
 .segs{display:flex;flex-wrap:wrap;gap:6px}
 .segs .seg{flex:1 1 0;min-width:56px;min-height:44px;padding:8px 10px;background:var(--card);color:var(--ink);border:1.5px solid var(--field);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.segs .seg.on{background:var(--main);color:var(--main-ink);border-color:var(--main)}
+.segs .seg.on{background:var(--main);color:var(--main-ink);border-color:var(--accent)}
 .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px;box-shadow:0 0 0 1.5px var(--field)}
 #kDlg{width:100%;max-width:none;height:100%;max-height:none;margin:0;border:0;border-radius:0;padding:24px 20px;box-shadow:none}
 #kDlg[open]{display:flex;align-items:center;justify-content:center}
@@ -481,7 +482,7 @@ function normalize(d) {
     const ok = v => typeof v === "string" && parseDate(v) === v;
     o.bin.push({ id: String(i.id || uid()), name: i.name.slice(0, 40), qty: qty(i.qty), zone: String(i.zone ?? ""), date: ok(i.date) ? i.date : "", kind: i.kind === "cook" ? "cook" : "exp", binAt: ok(i.binAt) ? i.binAt : "" });
   }
-  o.theme = ["mint", "pink", "white", "purple", "blue"].includes(d.theme) ? d.theme : "mint";   // 테마(냉장고마다 공유). 목록은 <head>의 SKINS 와 같게
+  o.theme = ["mint", "pink", "white", "purple", "blue"].includes(d.theme) ? d.theme : "white";   // 테마(냉장고마다 공유). 목록은 <head>의 SKINS 와 같게
   o.words = Object.create(null);   // 자동완성(이 냉장고에서 쓴 이름과 횟수). __proto__ 같은 이름도 안전하게
   Object.entries(d.words && typeof d.words === "object" ? d.words : {})
     .filter(([k, n]) => k.trim() && k.length <= 40 && Number.isInteger(n) && n > 0)
@@ -844,13 +845,13 @@ function processItem(it) {   // 냉장고 → 음쓰통(최근 것이 위, 최�
   const b = { ...it, binAt: todayISO() };
   data.bin = [b, ...data.bin].slice(0, MAX_BIN);
   save(); render();
-  fb.msg.replaceChildren(t("processed", it.name, L("tabBin")), h("a", { href: "#", textContent: t("undo"), style: "color:var(--main);font-weight:600;padding:10px 4px", onclick(e) { e.preventDefault(); if (data.bin.includes(b)) restoreItem(b); render(); } }));
+  fb.msg.replaceChildren(t("processed", it.name, L("tabBin")), h("a", { href: "#", textContent: t("undo"), style: "color:var(--accent);font-weight:600;padding:10px 4px", onclick(e) { e.preventDefault(); if (data.bin.includes(b)) restoreItem(b); render(); } }));
   clearTimeout(undoTimer); undoTimer = setTimeout(() => { if (fb.msg.querySelector("a")) fb.msg.textContent = ""; }, 8000);
 }
 $("eDel").onclick = () => { const it = editing; $("eDlg").close(); processItem(it); };
 function binSection() {   // 설정 안 음쓰통: 처리한 재료(최근 것부터), 되돌리기
   return h("details", { style: "margin-top:18px", open: binOpen, ontoggle() { binOpen = this.open; } },
-    h("summary", { textContent: t("binSummary", L("tabBin"), data.bin.length, L("doneBtn")), style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--main);padding:10px 0" }),
+    h("summary", { textContent: t("binSummary", L("tabBin"), data.bin.length, L("doneBtn")), style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--accent);padding:10px 0" }),
     h("div", { className: "meta", textContent: t("binKeep", MAX_BIN), style: "margin-bottom:6px" }),
     data.bin.length ? data.bin.map(b => h("div", { className: "row", style: "padding:8px 0;border-top:1px solid var(--line)" },
       h("div", { className: "grow" },
@@ -922,7 +923,7 @@ function renderSettings() {
     h("div", { className: "segs", role: "group", "aria-label": t("themeAria") }, Object.keys(SKINS).map(s => h("button", {
       type: "button", className: "seg" + (data.theme === s ? " on" : ""), "aria-pressed": String(data.theme === s),
       onclick() { data.theme = s; save(); applySkin(s); renderSettings(); },
-    }, h("span", { className: "dot", style: `background:${SKINS[s][1]}` }), t("skinNames")[s]))),
+    }, h("span", { className: "dot", style: `background:${SKINS[s][3]}` }), t("skinNames")[s]))),
     syncOn() ? [
       h("h3", { textContent: t("hShare") }),
       sync ? [
@@ -949,13 +950,13 @@ function renderSettings() {
     guideHidden() ? h("button", { className: "ghost", textContent: t("reshow"), style: "width:100%;margin-top:8px", onclick() { store.set(GUIDE, ""); renderSettings(); } }) : "",
     binSection(),
     h("details", { style: "margin-top:18px", open: wordsOpen, ontoggle() { wordsOpen = this.open; } },
-      h("summary", { textContent: t("wordsSummary", Object.keys(data.words).length), style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--main);padding:10px 0" }),
+      h("summary", { textContent: t("wordsSummary", Object.keys(data.words).length), style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--accent);padding:10px 0" }),
       Object.keys(data.words).length ? Object.keys(data.words).sort((a, b) => data.words[b] - data.words[a]).map(w => h("div", { className: "row", style: "margin-bottom:6px" },
         h("div", { className: "grow name", textContent: t("wordCount", w, data.words[w]) }),
         h("button", { className: "ghost x", textContent: "✕", "aria-label": t("wordDelAria", w), style: "padding:8px 12px;min-width:44px", onclick() { delete data.words[w]; save(); renderSettings(); } })))
         : h("div", { className: "meta", textContent: t("wordsEmpty") })),
     h("details", { style: "margin-top:18px" },
-      h("summary", { textContent: t("renameSummary"), style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--main);padding:10px 0" }),
+      h("summary", { textContent: t("renameSummary"), style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--accent);padding:10px 0" }),
       Object.keys(DEFAULT_LABELS).map(k => h("div", {},
         h("label", { textContent: t("help")[k], htmlFor: "sl-" + k }),
         h("input", { id: "sl-" + k, value: data.labels[k] ?? "", placeholder: DEF[LANG][k], maxLength: 20, oninput() { data.labels[k] = this.value; save(); applyLabels(); } })))));
