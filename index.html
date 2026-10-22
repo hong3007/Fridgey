@@ -353,7 +353,9 @@ const T = {
     noBackup: "아직 서버 백업이 켜져 있지 않아요. ⚙ → '공유 냉장고 만들기'로 시작할 수 있어요.",
     hide7: "7일간 보지 않기", hideNever: "다시 보지 않기",
     tapToSwitch: "눌러서 바꾸기", suggFridge: "자주 쓰는 이름 (누르면 바로 추가)", suggShop: "자주 사는 것 (누르면 바로 추가)",
-    namePh: f => `${f} (예: 우유)`, datePh: k => `${k} 예: 261020`,
+    namePh: f => `${f} (예: 우유)`, datePh: k => `${k} 예: 261020`, datePhCook: k => `${k} 예: 261020 (비우면 오늘)`,
+    autoMoveLabel: "체크하면 오늘 날짜(기준일)로 바로 냉장고에 담기",
+    autoMoved: (n, tf, z) => `‘${n}’ → ${tf} ${z} (기준일 오늘) · `,
     badDate: "날짜를 확인해 주세요. 예: 261020 (26년 10월 20일)", badDateShort: "날짜를 확인해 주세요. 예: 261020",
     maxItems: n => `재료는 최대 ${n}개까지예요. 다 먹은 것을 정리해 주세요.`, maxShop: n => `장보기 목록은 최대 ${n}개까지예요. 산 것을 정리해 주세요.`,
     hint: (f, a, shared) => `${f}을(를) 쓰고 ${a}을(를) 누르면 급한 순으로 정리돼요. 날짜는 비워도 돼요. 구역 이름·층 수는 오른쪽 위 ⚙에서 바꿀 수 있어요. ${shared ? "공유 냉장고로 함께 쓰는 중이에요." : "데이터는 이 폰에만 저장돼요."}`,
@@ -417,7 +419,9 @@ const T = {
     noBackup: "Server backup isn't on yet. Start it from ⚙ → 'Create shared fridge'.",
     hide7: "Hide for 7 days", hideNever: "Don't show again",
     tapToSwitch: "Tap to switch", suggFridge: "Frequent names (tap to add)", suggShop: "Frequent buys (tap to add)",
-    namePh: f => `${f} (e.g. milk)`, datePh: k => `${k} e.g. 261020`,
+    namePh: f => `${f} (e.g. milk)`, datePh: k => `${k} e.g. 261020`, datePhCook: k => `${k} e.g. 261020 (blank = today)`,
+    autoMoveLabel: "Checking an item moves it to the fridge right away (since today)",
+    autoMoved: (n, tf, z) => `‘${n}’ → ${tf} ${z} (since today) · `,
     badDate: "Please check the date. e.g. 261020 (YYMMDD = 2026-10-20)", badDateShort: "Please check the date. e.g. 261020 (YYMMDD)",
     maxItems: n => `Up to ${n} items. Please clear out what you've finished.`, maxShop: n => `Up to ${n} shopping items. Please clear out what you've bought.`,
     hint: (f, a, shared) => `Type a ${f} and tap ${a}; items are sorted by what's most urgent. The date is optional. Rename sections or change how many there are in ⚙ (top right). ${shared ? "You're sharing this fridge." : "Data is stored only on this phone."}`,
@@ -501,8 +505,9 @@ const rawData = store.get(LS);
 let data;
 try { data = normalize(JSON.parse(rawData)); } catch { data = normalize(null); if (rawData) { store.set("fridgey.corrupt", rawData); showNotice(t("corrupt")); } }
 let pref = {}; try { pref = JSON.parse(store.get("fridgey.pref")) || {}; } catch {}
+let autoMove = !!pref.autoMove;   // 장보기: 체크하면 바로 냉장고로(오늘 기준일)
 let tab = "fridge", kind = pref.kind === "cook" ? "cook" : "exp", zoneId = data.zones.some(z => z.id === pref.zone) ? pref.zone : data.zones[0].id, editing = null;
-const savePref = () => store.set("fridgey.pref", JSON.stringify({ zone: zoneId, kind }));
+const savePref = () => store.set("fridgey.pref", JSON.stringify({ zone: zoneId, kind, autoMove }));
 const reveal = el => setTimeout(() => el.scrollIntoView({ block: "center" }), 250);
 
 const h = (tag, props = {}, ...kids) => {
@@ -696,7 +701,7 @@ function applyLabels() {
 }
 let day = "";
 function render() {
-  applySkin(data.theme); applyLabels(); fb.msg.textContent = ""; day = new Date().toDateString();
+  applySkin(data.theme); applyLabels(); fb.msg.textContent = ""; shopBar.msg.textContent = ""; day = new Date().toDateString();
   const app = $("app"); app.replaceChildren(tab === "fridge" ? fridgeView() : shopView());
 }
 
@@ -718,7 +723,7 @@ fb.hint = h("div", { className: "note" });
 fb.listBox = h("div");
 function refreshFridgeBar() {
   fb.name.placeholder = t("namePh", L("fName")); fb.name.setAttribute("aria-label", L("fName"));
-  fb.date.placeholder = t("datePh", kindLabel(kind)); fb.date.setAttribute("aria-label", kindLabel(kind));
+  fb.date.placeholder = t(kind === "cook" ? "datePhCook" : "datePh", kindLabel(kind)); fb.date.setAttribute("aria-label", kindLabel(kind));
   fb.kind.title = t("tapToSwitch"); fb.zone.setAttribute("aria-label", t("zone")); fb.sugg.setAttribute("aria-label", t("suggFridge"));
   fb.kind.textContent = kindLabel(kind) + " ⇄";
   fb.add.textContent = L("addBtn");
@@ -728,13 +733,13 @@ fb.kind.onclick = () => { kind = kind === "exp" ? "cook" : "exp"; savePref(); re
 fb.zone.onchange = () => { zoneId = fb.zone.value; savePref(); };
 fb.date.oninput = () => { fb.date.classList.remove("bad"); fb.msg.textContent = ""; };
 fb.name.onkeydown = e => {   // 이름에서 엔터 → 날짜로 (날짜 비었을 때만), 날짜에서 엔터 → 추가
-  if (e.key === "Enter" && !e.isComposing && fb.name.value.trim() && !fb.date.value.trim()) { e.preventDefault(); fb.date.focus(); }
+  if (e.key === "Enter" && !e.isComposing && fb.name.value.trim() && !fb.date.value.trim() && kind !== "cook") { e.preventDefault(); fb.date.focus(); }   // 기준일이면 바로 추가(오늘)
 };
 fb.root.onsubmit = e => {
   e.preventDefault();
   const name = fb.name.value.trim();
   if (!name) return fb.name.focus();
-  const date = parseDate(fb.date.value, kind);
+  const date = !fb.date.value.trim() && kind === "cook" ? todayISO() : parseDate(fb.date.value, kind);   // 기준일인데 날짜를 비우면 오늘
   if (date === null) { fb.date.classList.add("bad"); fb.msg.textContent = t("badDate"); return fb.date.focus(); }
   if (data.items.length >= MAX_ROWS) { fb.msg.textContent = t("maxItems", MAX_ROWS); return; }
   data.items.push({ id: uid(), name, qty: "1", zone: fb.zone.value, date, kind });
@@ -802,13 +807,27 @@ function inFridgePill(name) {   // 장보기 항목이 이미 냉장고에 있�
   const zones = [...new Set(same.map(i => zoneName(i.zone)).filter(Boolean))].join(", ");
   return h("span", { className: "pill", textContent: t("inFridge", name, n, zones) });
 }
-function shopView() { renderShopList(); shopSugg(); return h("div", {}, shopBar.root, shopBar.sugg, shopBar.listBox); }
+shopBar.msg = h("div", { className: "meta msg", role: "status" });
+function shopView() { renderShopList(); shopSugg(); return h("div", {}, shopBar.root, shopBar.sugg, shopBar.msg, shopBar.listBox); }
+let shopUndoTimer;
+function autoMoveItem(s) {   // 장보기 → 냉장고(오늘 기준일, 마지막에 고른 구역). 잠깐 되돌리기
+  if (data.items.length >= MAX_ROWS) { s.done = false; renderShopList(); return alert(t("maxItems", MAX_ROWS)); }
+  const at = data.shop.indexOf(s);
+  const it = { id: uid(), name: s.name, qty: s.qty, zone: data.zones.some(z => z.id === zoneId) ? zoneId : data.zones[0].id, date: todayISO(), kind: "cook" };
+  data.items.push(it); data.shop = data.shop.filter(x => x !== s); save(); renderShopList(); shopSugg();
+  shopBar.msg.replaceChildren(t("autoMoved", s.name, L("tabFridge"), zoneName(it.zone)), h("a", { href: "#", textContent: t("undo"), style: "color:var(--accent);font-weight:600;padding:10px 4px", onclick(e) {
+    e.preventDefault(); data.items = data.items.filter(x => x !== it); s.done = false; data.shop.splice(Math.min(at, data.shop.length), 0, s); save(); shopBar.msg.textContent = ""; renderShopList(); shopSugg();
+  } }));
+  clearTimeout(shopUndoTimer); shopUndoTimer = setTimeout(() => { if (shopBar.msg.querySelector("a")) shopBar.msg.textContent = ""; }, 8000);
+}
 function renderShopList() {
   const done = data.shop.filter(s => s.done);
   shopBar.listBox.replaceChildren(
+    data.shop.length ? h("label", { className: "meta", style: "display:flex;align-items:center;gap:8px;min-height:44px;margin:0;cursor:pointer" },
+      h("input", { type: "checkbox", checked: autoMove, style: "width:20px;min-height:20px;flex:none", onchange() { autoMove = this.checked; savePref(); } }), t("autoMoveLabel")) : "",
     data.shop.length ? h("div", { className: "card" }, data.shop.map(s => h("div", { className: "item", style: "cursor:default" },
       h("label", { style: "display:flex;align-items:center;justify-content:center;width:44px;min-height:44px;margin:0;flex:none" },
-        h("input", { type: "checkbox", checked: s.done, "aria-label": s.name, style: "width:24px;min-height:24px", onchange() { s.done = this.checked; save(); const n = data.shop.indexOf(s); renderShopList(); shopBar.listBox.querySelectorAll("input[type=checkbox]")[n]?.focus(); } })),
+        h("input", { type: "checkbox", checked: s.done, "aria-label": s.name, style: "width:24px;min-height:24px", onchange() { s.done = this.checked; if (s.done && autoMove) return autoMoveItem(s); save(); const n = data.shop.indexOf(s); renderShopList(); shopBar.listBox.querySelectorAll("input[type=checkbox]")[n]?.focus(); } })),
       h("div", { style: "flex:1;min-width:0" },
         h("div", { className: "name", style: s.done ? "text-decoration:line-through;opacity:.6" : "", textContent: s.name }),
         inFridgePill(s.name)),
