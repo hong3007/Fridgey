@@ -216,11 +216,11 @@ function parseDate(text, kind = "exp", now = new Date()) {
   const mk = yy => Date.UTC(yy, m - 1, d);
   const valid = yy => { const dt = new Date(mk(yy)); return dt.getUTCFullYear() === yy && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d; };
   if (y === undefined) {
-    // 월일만 입력: 유통기한은 오늘 이후 첫 유효일(지났으면 내년…), 기준일은 오늘 이전 가장 가까운 유효일. 윤일(0229)을 위해 최대 8년 탐색
+    // 월일만 입력: 유통기한은 최근 30일 안에 지난 날짜면 올해(이미 지난 재료), 더 지났으면 내년…; 기준일은 오늘 이전 가장 가까운 유효일. 윤일(0229)을 위해 최대 8년 탐색
     const cook = kind === "cook";
     for (let i = 0; i <= 8 && y === undefined; i++) {
       const yy = now.getFullYear() + (cook ? -i : i);
-      if (valid(yy) && (cook ? mk(yy) <= today : mk(yy) >= today)) y = yy;
+      if (valid(yy) && (cook ? mk(yy) <= today : mk(yy) >= today - 30 * 864e5)) y = yy;
     }
     if (y === undefined) return null;
   }
@@ -247,6 +247,8 @@ function status(it, now = new Date(), lang = "ko") {   // lang: "ko" | "en" (표
 }
 const byUrgency = (a, b) => status(a).key - status(b).key || a.name.localeCompare(b.name, "ko");
 const fmtDate = d => d ? d.slice(2).replace(/-/g, "") : "";   // 2026-10-20 → 261020
+// 연도 없이 월일만 썼는지(1020, 10-20, 10.20) — 앱이 연도를 짐작한 경우
+function yearGuessed(text) { const t = String(text ?? "").trim(); return /\D/.test(t) ? t.split(/[.\-\/\s]+/).filter(Boolean).length === 2 : t.length === 4; }
 
 // 자동완성: words = { 이름: 쓴 횟수 } (Object.create(null)).
 // 초성 검색: "ㄷ" → 대파·두부, "ㄷㅍ" → 대파. 입력 중인 마지막 글자 "다"(받침 전)도 "닭"에 맞는다.
@@ -353,7 +355,7 @@ const T = {
     noBackup: "아직 서버 백업이 켜져 있지 않아요. ⚙ → '공유 냉장고 만들기'로 시작할 수 있어요.",
     hide7: "7일간 보지 않기", hideNever: "다시 보지 않기",
     tapToSwitch: "눌러서 바꾸기", suggFridge: "자주 쓰는 이름 (누르면 바로 추가)", suggShop: "자주 사는 것 (누르면 바로 추가)",
-    namePh: f => `${f} (예: 우유)`, datePh: k => `${k} 예: 261020`, datePhCook: k => `${k} 예: 261020 (비우면 오늘)`,
+    namePh: f => `${f} (예: 우유)`, datePh: k => `${k} 예: 261020`, datePhCook: (k, today) => `${k} 예: ${today} (비우면 오늘)`,
     autoMoveLabel: "체크하면 오늘 날짜(기준일)로 바로 냉장고에 담기",
     autoMoved: (n, tf, z) => `‘${n}’ → ${tf} ${z} (기준일 오늘) · `,
     badDate: "날짜를 확인해 주세요. 예: 261020 (26년 10월 20일)", badDateShort: "날짜를 확인해 주세요. 예: 261020",
@@ -388,6 +390,7 @@ const T = {
     renameSummary: "이름 바꾸기 — 비워 두면 기본 이름이에요",
     zoneMin: "구역은 최소 1개 있어야 해요.", zoneDelConfirm: (z, n) => n ? `"${z}"의 재료 ${n}개는 첫 번째 구역으로 옮겨져요. 삭제할까요?` : `"${z}"을(를) 삭제할까요?`,
     oldBrowser: "최신 브라우저에서 열어 주세요.",
+    noteExpired: "⚠ 유통기한이 이미 지난 날짜예요", noteYear: y => `${y}년 날짜로 넣었어요`,
     inFridge: (name, n, zones) => { const c = name.trim().slice(-1).charCodeAt(0) - 0xac00; return `이미 ${name}${c < 0 || c > 11171 ? "이(가)" : c % 28 ? "이" : "가"} ${n}개 ${zones}에 있습니다`; },
   },
   en: {
@@ -419,7 +422,7 @@ const T = {
     noBackup: "Server backup isn't on yet. Start it from ⚙ → 'Create shared fridge'.",
     hide7: "Hide for 7 days", hideNever: "Don't show again",
     tapToSwitch: "Tap to switch", suggFridge: "Frequent names (tap to add)", suggShop: "Frequent buys (tap to add)",
-    namePh: f => `${f} (e.g. milk)`, datePh: k => `${k} e.g. 261020`, datePhCook: k => `${k} e.g. 261020 (blank = today)`,
+    namePh: f => `${f} (e.g. milk)`, datePh: k => `${k} e.g. 261020`, datePhCook: (k, today) => `${k} e.g. ${today} (blank = today)`,
     autoMoveLabel: "Checking an item moves it to the fridge right away (since today)",
     autoMoved: (n, tf, z) => `‘${n}’ → ${tf} ${z} (since today) · `,
     badDate: "Please check the date. e.g. 261020 (YYMMDD = 2026-10-20)", badDateShort: "Please check the date. e.g. 261020 (YYMMDD)",
@@ -454,6 +457,7 @@ const T = {
     renameSummary: "Rename — leave blank for the default",
     zoneMin: "You need at least one section.", zoneDelConfirm: (z, n) => n ? `${n} items in "${z}" will move to the first section. Delete it?` : `Delete "${z}"?`,
     oldBrowser: "Please open this in an up-to-date browser.",
+    noteExpired: "⚠ This expiry date has already passed", noteYear: y => `Saved as ${y}`,
     inFridge: (name, n, zones) => `Already in the fridge: ${n} in ${zones}`,
   },
 };
@@ -723,7 +727,7 @@ fb.hint = h("div", { className: "note" });
 fb.listBox = h("div");
 function refreshFridgeBar() {
   fb.name.placeholder = t("namePh", L("fName")); fb.name.setAttribute("aria-label", L("fName"));
-  fb.date.placeholder = t(kind === "cook" ? "datePhCook" : "datePh", kindLabel(kind)); fb.date.setAttribute("aria-label", kindLabel(kind));
+  fb.date.placeholder = t(kind === "cook" ? "datePhCook" : "datePh", kindLabel(kind), fmtDate(todayISO()));   // 기준일 예시는 오늘 날짜 fb.date.setAttribute("aria-label", kindLabel(kind));
   fb.kind.title = t("tapToSwitch"); fb.zone.setAttribute("aria-label", t("zone")); fb.sugg.setAttribute("aria-label", t("suggFridge"));
   fb.kind.textContent = kindLabel(kind) + " ⇄";
   fb.add.textContent = L("addBtn");
@@ -731,7 +735,23 @@ function refreshFridgeBar() {
 }
 fb.kind.onclick = () => { kind = kind === "exp" ? "cook" : "exp"; savePref(); refreshFridgeBar(); };
 fb.zone.onchange = () => { zoneId = fb.zone.value; savePref(); };
-fb.date.oninput = () => { fb.date.classList.remove("bad"); fb.msg.textContent = ""; };
+fb.date.oninput = () => { fb.date.classList.remove("bad"); fb.msg.textContent = ""; delete fb.date.dataset.note; };
+// 날짜칸을 벗어나면 알아본 날짜를 261020 형식으로 보여 준다(1020, 20261020, 26-10-20 → 261020). 못 알아보면 그대로 둠
+function dateNote(text, date, k) {   // 월일만 쓴 날짜를 어떻게 읽었는지 알려 줄 말(없으면 "")
+  if (!date || !yearGuessed(text)) return "";
+  const y = +date.slice(0, 4), notes = [];
+  if (y !== new Date().getFullYear()) notes.push(t("noteYear", y));
+  if (k === "exp" && daysLeft(date) < 0) notes.push(t("noteExpired"));
+  return notes.join(" · ");
+}
+const tidyDate = (input, kindOf, show) => {
+  const raw = input.value, d = parseDate(raw, kindOf);
+  if (!d) return;
+  const note = dateNote(raw, d, kindOf);
+  if (note) { input.dataset.note = note; show(`${fmtDate(d)} — ${note}`); }
+  input.value = fmtDate(d);
+};
+fb.date.onblur = () => tidyDate(fb.date, kind, m => { fb.msg.textContent = m; });
 fb.name.onkeydown = e => {   // 이름에서 엔터 → 날짜로 (날짜 비었을 때만), 날짜에서 엔터 → 추가
   if (e.key === "Enter" && !e.isComposing && fb.name.value.trim() && !fb.date.value.trim() && kind !== "cook") { e.preventDefault(); fb.date.focus(); }   // 기준일이면 바로 추가(오늘)
 };
@@ -740,12 +760,14 @@ fb.root.onsubmit = e => {
   const name = fb.name.value.trim();
   if (!name) return fb.name.focus();
   const date = !fb.date.value.trim() && kind === "cook" ? todayISO() : parseDate(fb.date.value, kind);   // 기준일인데 날짜를 비우면 오늘
+  const note = dateNote(fb.date.value, date, kind) || fb.date.dataset.note || "";   // 칸을 벗어나며 이미 정리됐으면 그때의 안내
   if (date === null) { fb.date.classList.add("bad"); fb.msg.textContent = t("badDate"); return fb.date.focus(); }
   if (data.items.length >= MAX_ROWS) { fb.msg.textContent = t("maxItems", MAX_ROWS); return; }
   data.items.push({ id: uid(), name, qty: "1", zone: fb.zone.value, date, kind });
   bumpWord(data.words, name, MAX_WORDS);
   save();
-  fb.name.value = ""; fb.date.value = ""; fb.msg.textContent = `✓ ${name}${date ? ` · ${fmtDate(date)} (${status({ date, kind }, undefined, LANG).label})` : ""} → ${zoneName(fb.zone.value)}`;
+  fb.name.value = ""; fb.date.value = ""; delete fb.date.dataset.note;
+  fb.msg.textContent = `✓ ${name}${date ? ` · ${fmtDate(date)} (${status({ date, kind }, undefined, LANG).label})` : ""} → ${zoneName(fb.zone.value)}${note ? ` · ${note}` : ""}`;
   renderFridgeList(); renderSugg(fb); fb.name.focus();
 };
 fb.name.oninput = () => renderSugg(fb);
@@ -844,7 +866,8 @@ function openEdit(it) {
   $("eKind").value = it.kind; $("eQty").value = it.qty; fillZones($("eZone"), it.zone);
   openDlg($("eDlg")); $("eCancel").focus();   // 폰 키보드가 바로 뜨지 않게
 }
-$("eDate").oninput = () => { $("eDate").classList.remove("bad"); $("eErr").textContent = ""; };
+$("eDate").oninput = () => { $("eDate").classList.remove("bad"); $("eErr").textContent = ""; delete $("eDate").dataset.note; };
+$("eDate").onblur = () => tidyDate($("eDate"), $("eKind").value, m => { $("eErr").textContent = m; });
 $("eForm").onsubmit = e => {
   e.preventDefault();
   const name = $("eName").value.trim(), date = parseDate($("eDate").value, $("eKind").value);
@@ -893,8 +916,9 @@ function openMove() {
   fillZones($("mZone"), zoneId);
   moveRows = data.shop.filter(s => s.done).map(s => ({ s, date: h("input", { inputMode: "numeric", maxLength: 12, autocomplete: "off", placeholder: t("movePh", L("fDate")), "aria-label": s.name }) }));
   moveRows.forEach((r, i) => {
-    r.date.oninput = () => { r.date.classList.remove("bad"); $("mErr").textContent = ""; };
+    r.date.oninput = () => { r.date.classList.remove("bad"); $("mErr").textContent = ""; delete r.date.dataset.note; };
     r.date.onfocus = () => reveal(r.date);
+    r.date.onblur = () => tidyDate(r.date, "exp", m => { $("mErr").textContent = `${r.s.name}: ${m}`; });
     r.date.onkeydown = e => { if (e.key === "Enter" && i < moveRows.length - 1) { e.preventDefault(); moveRows[i + 1].date.focus(); } };
   });
   $("mErr").textContent = "";
