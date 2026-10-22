@@ -155,12 +155,12 @@ button.done{flex:none;padding:3px 10px;min-height:30px;font-size:13px;border-wid
   <form id="eForm">
     <h2 id="eTitle">수정</h2>
     <label for="eName" id="eNameL"></label><input id="eName" required maxlength="40" autocomplete="off">
-    <label for="eDate" id="eDateL"></label><input id="eDate" inputmode="numeric" maxlength="12" autocomplete="off" placeholder="예: 261020"><div class="err" id="eErr"></div>
+    <label for="eDate" id="eDateL"></label><input id="eDate" inputmode="numeric" maxlength="12" autocomplete="off" placeholder=""><div class="err" id="eErr"></div>
     <label for="eKind" id="eKindL">날짜 종류</label><select id="eKind"></select>
     <label for="eQty" id="eQtyL"></label><input id="eQty" maxlength="20" autocomplete="off">
     <label id="eZoneL">구역</label><div id="eZone" class="segs" role="group" aria-label="구역"></div>
     <div class="actions stick"><button type="button" class="ghost" id="eCancel">취소</button><button type="submit" id="eSave">저장</button></div>
-    <div class="actions"><button type="button" class="danger" id="eDel">삭제</button></div>
+    <div class="actions"><button type="button" class="ghost" id="eDel">처리</button><button type="button" class="danger" id="eErase">삭제</button></div>
   </form>
 </dialog>
 
@@ -325,13 +325,14 @@ const DEF = {   // 기본 이름(사용자가 설정에서 바꾼 이름이 있�
   en: { title: "Fridgey", tabFridge: "Fridge", tabShop: "Shopping", fName: "Food", fDate: "Expires", fCook: "Since", fQty: "Qty", addBtn: "Add", tabBin: "Bin", doneBtn: "Done" },
 };
 const DEFAULT_LABELS = DEF.ko;   // 이름 칸 목록(normalize 용)
+const exDate = () => { const d = new Date(), p = n => String(n).padStart(2, "0"); return String(d.getFullYear()).slice(2) + p(d.getMonth() + 1) + p(d.getDate()); };   // 날짜 예시 = 오늘(YYMMDD)
 const T = {
   ko: {
     help: { title: "앱 이름", tabFridge: "첫 번째 탭 이름", tabShop: "두 번째 탭 이름", fName: "음식 입력칸 이름", fDate: "유통기한 입력칸 이름", fCook: "기준일 입력칸 이름", fQty: "수량 입력칸 이름", addBtn: "추가 버튼 이름", tabBin: "음쓰통 이름 (설정 안)", doneBtn: "처리 버튼 이름" },
     zones: ["1층", "2층", "3층"], zoneNew: n => `${n}층`, zone: "구역",
     skinNames: { mint: "민트", pink: "핑크", white: "화이트", purple: "퍼플", blue: "블루" },
     settings: "설정", edit: "수정", dateKind: "날짜 종류", cancel: "취소", save: "저장", close: "닫기",
-    moveTitle: tf => `${tf}에 넣기`, moveDo: "넣기", guideTitle: "Fridgey 사용법", eDatePh: "예: 261020",
+    moveTitle: tf => `${tf}에 넣기`, moveDo: "넣기", guideTitle: "Fridgey 사용법", eDatePh: () => `예: ${exDate()}`,
     corrupt: "저장된 데이터를 읽지 못해 새로 시작했어요. 원본은 이 기기에 따로 남겨 뒀어요.",
     resetData: "저장된 데이터에 문제가 있어 새로 시작했어요.",
     saveFail: "이 기기에 저장하지 못했어요. 설정에서 데이터를 내보내 백업해 두세요.",
@@ -347,7 +348,7 @@ const T = {
     gate3: "카톡 '나에게 보내기'로 보내 두면 가장 편해요. 함께 쓸 사람에게도 이 파일을 보내 주세요.",
     saveKey: "키 파일 보관하기", gateRetry: "보관이 끝나야 다음으로 넘어가요. 다시 눌러 주세요.", haveKey: "이미 받은 키 파일이 있어요 (참여하기)",
     guideNever: "시작할 때 사용법 안내: 다시 보지 않음", guideUntil: (m, d) => `시작할 때 사용법 안내: ${m}월 ${d}일까지 숨김`, guideOn: "시작할 때 사용법 안내: 보임",
-    g1: (f, a) => `① ${f}을(를) 쓰고 날짜(예: 261020)를 넣은 뒤 ${a}. 글자를 치면 자주 쓴 이름이 떠서 누르면 바로 들어가요.`,
+    g1: (f, a) => `① ${f}을(를) 쓰고 날짜(예: ${exDate()})를 넣은 뒤 ${a}. 글자를 치면 자주 쓴 이름이 떠서 누르면 바로 들어가요.`,
     g2: "② 이 냉장고는 자동으로 암호화돼서 서버에 백업돼요. 여는 열쇠는 '키 파일' 하나뿐이라 서버 주인도 내용을 못 봐요.",
     g3: "③ 키 파일을 카톡 '나에게 보내기' 등으로 꼭 보관하세요. 쿠키·사이트 데이터를 지우거나 폰을 바꿔도 ⚙ → '키 파일로 참여하기'로 그대로 되살릴 수 있어요.",
     g4: "④ 함께 쓰려면 키 파일을 보내 주세요. 받은 사람은 ⚙ → '키 파일로 참여하기'. 이미 받은 키 파일이 있다면 지금 그렇게 하면 돼요.",
@@ -355,15 +356,15 @@ const T = {
     noBackup: "아직 서버 백업이 켜져 있지 않아요. ⚙ → '공유 냉장고 만들기'로 시작할 수 있어요.",
     hide7: "7일간 보지 않기", hideNever: "다시 보지 않기",
     tapToSwitch: "눌러서 바꾸기", suggFridge: "자주 쓰는 이름 (누르면 바로 추가)", suggShop: "자주 사는 것 (누르면 바로 추가)",
-    namePh: f => `${f} (예: 우유)`, datePh: k => `${k} 예: 261020`, datePhCook: (k, today) => `${k} 예: ${today} (비우면 오늘)`,
+    namePh: f => `${f} (예: 우유)`, datePh: k => `${k} 예: ${exDate()}`, datePhCook: k => `${k} 예: ${exDate()} (비우면 오늘)`,
     autoMoveLabel: "체크하면 오늘 날짜(기준일)로 바로 냉장고에 담기",
     autoMoved: (n, tf, z) => `‘${n}’ → ${tf} ${z} (기준일 오늘) · `,
-    badDate: "날짜를 확인해 주세요. 예: 261020 (26년 10월 20일)", badDateShort: "날짜를 확인해 주세요. 예: 261020",
+    badDate: () => { const e = exDate(); return `날짜를 확인해 주세요. 예: ${e} (${+e.slice(0, 2)}년 ${+e.slice(2, 4)}월 ${+e.slice(4)}일)`; }, badDateShort: () => `날짜를 확인해 주세요. 예: ${exDate()}`,
     maxItems: n => `재료는 최대 ${n}개까지예요. 다 먹은 것을 정리해 주세요.`, maxShop: n => `장보기 목록은 최대 ${n}개까지예요. 산 것을 정리해 주세요.`,
     hint: (f, a, shared) => `${f}을(를) 쓰고 ${a}을(를) 누르면 급한 순으로 정리돼요. 날짜는 비워도 돼요. 구역 이름·층 수는 오른쪽 위 ⚙에서 바꿀 수 있어요. ${shared ? "공유 냉장고로 함께 쓰는 중이에요." : "데이터는 이 폰에만 저장돼요."}`,
     editAria: n => `${n} 수정`, doneAria: (n, d, b) => `${n} ${d} (${b}으로)`, empty: "비어 있음", delAria: n => `${n} 삭제`,
     shopEmpty: tf => `사려는 것을 위 칸에 적어 보세요. 사온 뒤 체크하면 ${tf}에 바로 넣을 수 있어요.`,
-    moveBtn: (n, tf) => `체크한 ${n}개를 ${tf}에 넣기`, movePh: f => `${f} 예: 261020 (비워도 돼요)`,
+    moveBtn: (n, tf) => `체크한 ${n}개를 ${tf}에 넣기`, movePh: f => `${f} 예: ${exDate()} (비워도 돼요)`, eraseItem: "삭제",
     processed: (n, b) => `‘${n}’ ${b}으로(⚙에서 볼 수 있어요) · `, undo: "되돌리기",
     binSummary: (b, n, d) => `${b} (${n}개) — ${d}한 재료, 되돌리거나 지울 수 있어요`, binKeep: n => `최근 ${n}개까지 보관돼요.`,
     binDate: (m, d, done) => `${m}/${d} ${done}`, restore: "되돌리기", restoreAria: n => `${n} 되돌리기`,
@@ -398,7 +399,7 @@ const T = {
     zones: ["Shelf 1", "Shelf 2", "Shelf 3"], zoneNew: n => `Shelf ${n}`, zone: "Section",
     skinNames: { mint: "Mint", pink: "Pink", white: "White", purple: "Purple", blue: "Blue" },
     settings: "Settings", edit: "Edit", dateKind: "Date type", cancel: "Cancel", save: "Save", close: "Close",
-    moveTitle: tf => `Move to ${tf}`, moveDo: "Move", guideTitle: "How to use Fridgey", eDatePh: "e.g. 261020",
+    moveTitle: tf => `Move to ${tf}`, moveDo: "Move", guideTitle: "How to use Fridgey", eDatePh: () => `e.g. ${exDate()}`,
     corrupt: "Couldn't read the saved data, so the app started fresh. The original was kept on this device.",
     resetData: "Saved data had a problem, so the app started fresh.",
     saveFail: "Couldn't save on this device. Export your data from Settings as a backup.",
@@ -414,7 +415,7 @@ const T = {
     gate3: "Sending it to yourself in a messenger is the easiest. Send the file to anyone you share the fridge with, too.",
     saveKey: "Save key file", gateRetry: "Please save it to continue. Tap again.", haveKey: "I already have a key file (join)",
     guideNever: "Guide at start: never show", guideUntil: (m, d) => `Guide at start: hidden until ${m}/${d}`, guideOn: "Guide at start: shown",
-    g1: (f, a) => `① Type a ${f} and a date (e.g. 261020 = YYMMDD), then tap ${a}. As you type, names you often use pop up; tap one to add it right away.`,
+    g1: (f, a) => `① Type a ${f} and a date (e.g. ${exDate()} = YYMMDD), then tap ${a}. As you type, names you often use pop up; tap one to add it right away.`,
     g2: "② This fridge is encrypted and backed up to the server automatically. The only key is your key file, so even the server owner can't read it.",
     g3: "③ Keep the key file somewhere safe, e.g. send it to yourself in a messenger. If you clear site data or change phones, ⚙ → 'Join with key file' brings everything back.",
     g4: "④ To share, send the key file. The other person opens ⚙ → 'Join with key file'. If you already received a key file, do that now.",
@@ -422,15 +423,15 @@ const T = {
     noBackup: "Server backup isn't on yet. Start it from ⚙ → 'Create shared fridge'.",
     hide7: "Hide for 7 days", hideNever: "Don't show again",
     tapToSwitch: "Tap to switch", suggFridge: "Frequent names (tap to add)", suggShop: "Frequent buys (tap to add)",
-    namePh: f => `${f} (e.g. milk)`, datePh: k => `${k} e.g. 261020`, datePhCook: (k, today) => `${k} e.g. ${today} (blank = today)`,
+    namePh: f => `${f} (e.g. milk)`, datePh: k => `${k} e.g. ${exDate()}`, datePhCook: k => `${k} e.g. ${exDate()} (blank = today)`,
     autoMoveLabel: "Checking an item moves it to the fridge right away (since today)",
     autoMoved: (n, tf, z) => `‘${n}’ → ${tf} ${z} (since today) · `,
-    badDate: "Please check the date. e.g. 261020 (YYMMDD = 2026-10-20)", badDateShort: "Please check the date. e.g. 261020 (YYMMDD)",
+    badDate: () => { const e = exDate(); return `Please check the date. e.g. ${e} (YYMMDD = 20${e.slice(0, 2)}-${e.slice(2, 4)}-${e.slice(4)})`; }, badDateShort: () => `Please check the date. e.g. ${exDate()} (YYMMDD)`,
     maxItems: n => `Up to ${n} items. Please clear out what you've finished.`, maxShop: n => `Up to ${n} shopping items. Please clear out what you've bought.`,
     hint: (f, a, shared) => `Type a ${f} and tap ${a}; items are sorted by what's most urgent. The date is optional. Rename sections or change how many there are in ⚙ (top right). ${shared ? "You're sharing this fridge." : "Data is stored only on this phone."}`,
     editAria: n => `Edit ${n}`, doneAria: (n, d, b) => `${d}: ${n} (to ${b})`, empty: "Empty", delAria: n => `Delete ${n}`,
     shopEmpty: tf => `Write what you need above. Check items once bought to move them into the ${tf}.`,
-    moveBtn: (n, tf) => `Move ${n} checked to ${tf}`, movePh: f => `${f} e.g. 261020 (optional)`,
+    moveBtn: (n, tf) => `Move ${n} checked to ${tf}`, movePh: f => `${f} e.g. ${exDate()} (optional)`, eraseItem: "Delete",
     processed: (n, b) => `‘${n}’ moved to ${b} (see ⚙) · `, undo: "Undo",
     binSummary: (b, n) => `${b} (${n}) — finished items you can restore or delete`, binKeep: n => `Keeps the latest ${n}.`,
     binDate: (m, d, done) => `${done} ${m}/${d}`, restore: "Restore", restoreAria: n => `Restore ${n}`,
@@ -685,7 +686,7 @@ function download(name, text) {
 function applyLang() {   // 정적 화면 글자(대화상자 제목·버튼 등)를 지금 언어로
   document.documentElement.lang = LANG;
   $("gear").setAttribute("aria-label", t("settings"));
-  for (const [id, k] of [["eTitle", "edit"], ["eKindL", "dateKind"], ["eZoneL", "zone"], ["eCancel", "cancel"], ["eSave", "save"], ["mZoneL", "zone"], ["mCancel", "cancel"], ["mSave", "moveDo"], ["sTitle", "settings"], ["sClose", "close"], ["gTitle", "guideTitle"]]) $(id).textContent = t(k);
+  for (const [id, k] of [["eTitle", "edit"], ["eErase", "eraseItem"], ["eKindL", "dateKind"], ["eZoneL", "zone"], ["eCancel", "cancel"], ["eSave", "save"], ["mZoneL", "zone"], ["mCancel", "cancel"], ["mSave", "moveDo"], ["sTitle", "settings"], ["sClose", "close"], ["gTitle", "guideTitle"]]) $(id).textContent = t(k);
   $("mTitle").textContent = t("moveTitle", L("tabFridge"));
   for (const id of ["eZone", "mZone"]) $(id).setAttribute("aria-label", t("zone"));
   $("eDate").placeholder = t("eDatePh");
@@ -895,6 +896,11 @@ function processItem(it) {   // 냉장고 → 음쓰통(최근 것이 위, 최�
   clearTimeout(undoTimer); undoTimer = setTimeout(() => { if (fb.msg.querySelector("a")) fb.msg.textContent = ""; }, 8000);
 }
 $("eDel").onclick = () => { const it = editing; $("eDlg").close(); processItem(it); };
+$("eErase").onclick = () => {   // 음쓰통을 거치지 않고 완전히 지움(되돌릴 수 없음)
+  const it = editing;
+  if (!confirm(t("eraseConfirm", it.name))) return;
+  data.items = data.items.filter(x => x !== it); save(); $("eDlg").close(); render();
+};
 function binSection() {   // 설정 안 음쓰통: 처리한 재료(최근 것부터), 되돌리기
   return h("details", { style: "margin-top:18px", open: binOpen, ontoggle() { binOpen = this.open; } },
     h("summary", { textContent: t("binSummary", L("tabBin"), data.bin.length, L("doneBtn")), style: "cursor:pointer;font-size:16px;font-weight:600;color:var(--accent);padding:10px 0" }),
