@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme:light)">
 <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme:dark)">
 <title>Fridgey</title>
+<link rel="manifest" href="manifest.json">   <!-- 크롬 "앱 설치" 버튼용(manifest.json·icon-192/512.png 같이 배포) -->
 <script>
 // 테마는 화면이 그려지기 전에 적용한다(기본 테마가 잠깐 보였다가 바뀌지 않게). data.theme 과 같은 값을 fridgey.skin 에 따로 둔다.
 var SKINS = { white: ["화이트", "#fafafa", "#fafafa", "#ffffff"], mint: ["민트", "#f0faf6", "#0d1a1a", "#bfe8d8"], pink: ["핑크", "#fff4f8", "#1c0b14", "#f8cfe0"], purple: ["퍼플", "#f7f3ff", "#120b22", "#ddd0f7"], blue: ["블루", "#f2f7ff", "#0a1222", "#c9dcfa"] };
