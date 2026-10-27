@@ -804,10 +804,12 @@ function renderFridgeList() {
 
 // 장보기
 const shopBar = {
-  name: h("input", { maxLength: 40, autocomplete: "off" }),
-  qty: h("input", { maxLength: 20, autocomplete: "off", value: "1", style: "text-align:center" }),
+  name: h("input", { maxLength: 40, autocomplete: "off", enterKeyHint: "done" }),
+  qty: h("input", { maxLength: 20, autocomplete: "off", value: "1", style: "text-align:center", enterKeyHint: "done" }),
   add: h("button", { type: "submit" }),
 };
+// 엔터 → 바로 추가 (폰 키보드가 '다음'으로 수량칸에 넘어가지 않게)
+for (const el of [shopBar.name, shopBar.qty]) el.onkeydown = e => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); shopBar.root.requestSubmit(); } };
 shopBar.root = h("form", { className: "card row entry" }, h("div", { style: "flex:1;min-width:0" }, shopBar.name), h("div", { style: "width:72px" }, shopBar.qty), shopBar.add);
 shopBar.listBox = h("div");
 shopBar.root.onsubmit = e => {
