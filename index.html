@@ -496,6 +496,7 @@ function normalize(d) {
     const ok = v => typeof v === "string" && parseDate(v) === v;
     o.bin.push({ id: String(i.id || uid()), name: i.name.slice(0, 40), qty: qty(i.qty), zone: String(i.zone ?? ""), date: ok(i.date) ? i.date : "", kind: i.kind === "cook" ? "cook" : "exp", binAt: ok(i.binAt) ? i.binAt : "" });
   }
+  o.autoMove = typeof d.autoMove === "boolean" ? d.autoMove : null;   // 장보기: 체크하면 바로 냉장고로(냉장고마다 공유). null = 아직 안 정함
   o.theme = ["mint", "pink", "white", "purple", "blue"].includes(d.theme) ? d.theme : "white";   // 테마(냉장고마다 공유). 목록은 <head>의 SKINS 와 같게
   o.words = Object.create(null);   // 자동완성(이 냉장고에서 쓴 이름과 횟수). __proto__ 같은 이름도 안전하게
   Object.entries(d.words && typeof d.words === "object" ? d.words : {})
@@ -511,9 +512,9 @@ const rawData = store.get(LS);
 let data;
 try { data = normalize(JSON.parse(rawData)); } catch { data = normalize(null); if (rawData) { store.set("fridgey.corrupt", rawData); showNotice(t("corrupt")); } }
 let pref = {}; try { pref = JSON.parse(store.get("fridgey.pref")) || {}; } catch {}
-let autoMove = !!pref.autoMove;   // 장보기: 체크하면 바로 냉장고로(오늘 기준일)
 let tab = "fridge", kind = pref.kind === "cook" ? "cook" : "exp", zoneId = data.zones.some(z => z.id === pref.zone) ? pref.zone : data.zones[0].id, editing = null;
-const savePref = () => store.set("fridgey.pref", JSON.stringify({ zone: zoneId, kind, autoMove }));
+const savePref = () => store.set("fridgey.pref", JSON.stringify({ zone: zoneId, kind }));
+const autoMoveOn = () => data.autoMove ?? !!pref.autoMove;   // 예전엔 기기별(fridgey.pref)로 저장했음
 const reveal = el => setTimeout(() => el.scrollIntoView({ block: "center" }), 250);
 
 const h = (tag, props = {}, ...kids) => {
@@ -670,13 +671,22 @@ $("gDlg").onclose = () => { if ($("sDlg").open) renderSettings(); };
 const zoneName = id => data.zones.find(z => z.id === id)?.name ?? "";
 const kindLabel = k => k === "cook" ? L("fCook") : L("fDate");
 // 구역 선택 = 구역마다 버튼 하나(한 번 누르면 선택). 고른 값은 box.value 에 두고 box.onchange 를 부른다(예전 select 와 같은 사용법)
+// 버튼 글자가 넘치면 좌우 여백을 좁히고 글자를 1px씩 줄인다(최소 11px). 창이 열려 크기가 생길 때·화면 폭이 바뀔 때도 다시 맞춤
+const fitSegs = box => { for (const b of box.children) {
+  b.style.fontSize = b.style.paddingInline = "";
+  if (b.scrollWidth > b.clientWidth) b.style.paddingInline = "2px";
+  for (let px = parseFloat(getComputedStyle(b).fontSize); b.scrollWidth > b.clientWidth && px > 11;) b.style.fontSize = --px + "px";
+} };
+const segFit = typeof ResizeObserver === "function" ? new ResizeObserver(es => es.forEach(e => fitSegs(e.target))) : null;
 const fillZones = (box, cur) => {
+  segFit?.observe(box);
   box.value = data.zones.some(z => z.id === cur) ? cur : data.zones[0].id;
   box.replaceChildren(...data.zones.map(z => h("button", { type: "button", className: "seg" + (z.id === box.value ? " on" : ""), textContent: z.name || t("zone"), "aria-pressed": String(z.id === box.value), onclick() {
     box.value = z.id;
     for (const b of box.children) { b.classList.toggle("on", b === this); b.setAttribute("aria-pressed", String(b === this)); }
     box.onchange?.();
   } })));
+  fitSegs(box);
 };
 function download(name, text) {
   const a = h("a", { href: URL.createObjectURL(new Blob([text], { type: "application/json" })), download: name });
@@ -850,10 +860,10 @@ function renderShopList() {
   const done = data.shop.filter(s => s.done);
   shopBar.listBox.replaceChildren(
     data.shop.length ? h("label", { className: "meta", style: "display:flex;align-items:center;gap:8px;min-height:44px;margin:0;cursor:pointer" },
-      h("input", { type: "checkbox", checked: autoMove, style: "width:20px;min-height:20px;flex:none", onchange() { autoMove = this.checked; savePref(); } }), t("autoMoveLabel")) : "",
+      h("input", { type: "checkbox", checked: autoMoveOn(), style: "width:20px;min-height:20px;flex:none", onchange() { data.autoMove = this.checked; save(); } }), t("autoMoveLabel")) : "",
     data.shop.length ? h("div", { className: "card" }, data.shop.map(s => h("div", { className: "item", style: "cursor:default" },
       h("label", { style: "display:flex;align-items:center;justify-content:center;width:44px;min-height:44px;margin:0;flex:none" },
-        h("input", { type: "checkbox", checked: s.done, "aria-label": s.name, style: "width:24px;min-height:24px", onchange() { s.done = this.checked; if (s.done && autoMove) return autoMoveItem(s); save(); const n = data.shop.indexOf(s); renderShopList(); shopBar.listBox.querySelectorAll("input[type=checkbox]")[n]?.focus(); } })),
+        h("input", { type: "checkbox", checked: s.done, "aria-label": s.name, style: "width:24px;min-height:24px", onchange() { s.done = this.checked; if (s.done && autoMoveOn()) return autoMoveItem(s); save(); const n = data.shop.indexOf(s); renderShopList(); shopBar.listBox.querySelectorAll("input[type=checkbox]")[n]?.focus(); } })),
       h("div", { style: "flex:1;min-width:0" },
         h("div", { className: "name", style: s.done ? "text-decoration:line-through;opacity:.6" : "", textContent: s.name }),
         inFridgePill(s.name)),
