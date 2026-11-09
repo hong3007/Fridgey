@@ -160,7 +160,7 @@ button.done{flex:none;padding:3px 10px;min-height:30px;font-size:13px;border-wid
     <label for="eKind" id="eKindL">날짜 종류</label><select id="eKind"></select>
     <label for="eQty" id="eQtyL"></label><input id="eQty" maxlength="20" autocomplete="off">
     <label id="eZoneL">구역</label><div id="eZone" class="segs" role="group" aria-label="구역"></div>
-    <div class="actions stick"><button type="button" class="ghost" id="eCancel">취소</button><button type="submit" id="eSave">저장</button></div>
+    <div class="actions stick"><button type="submit" id="eClose">닫기</button></div>
     <div class="actions"><button type="button" class="ghost" id="eDel">처리</button><button type="button" class="danger" id="eErase">삭제</button></div>
   </form>
 </dialog>
@@ -358,7 +358,7 @@ const T = {
     hide7: "7일간 보지 않기", hideNever: "다시 보지 않기",
     tapToSwitch: "눌러서 바꾸기", suggFridge: "자주 쓰는 이름 (누르면 바로 추가)", suggShop: "자주 사는 것 (누르면 바로 추가)",
     namePh: f => `${f} (예: 우유)`, datePh: k => `${k} 예: ${exDate()}`, datePhCook: k => `${k} 예: ${exDate()} (비우면 오늘)`,
-    autoMoveLabel: "체크하면 오늘 날짜(기준일)로 바로 냉장고에 담기",
+    autoMoveLabel: "체크하면 바로 냉장고에 담기", autoCook: c => `${c}(오늘)`,
     autoMoved: (n, tf, z) => `‘${n}’ → ${tf} ${z} (기준일 오늘) · `,
     badDate: () => { const e = exDate(); return `날짜를 확인해 주세요. 예: ${e} (${+e.slice(0, 2)}년 ${+e.slice(2, 4)}월 ${+e.slice(4)}일)`; }, badDateShort: () => `날짜를 확인해 주세요. 예: ${exDate()}`,
     maxItems: n => `재료는 최대 ${n}개까지예요. 다 먹은 것을 정리해 주세요.`, maxShop: n => `장보기 목록은 최대 ${n}개까지예요. 산 것을 정리해 주세요.`,
@@ -425,7 +425,7 @@ const T = {
     hide7: "Hide for 7 days", hideNever: "Don't show again",
     tapToSwitch: "Tap to switch", suggFridge: "Frequent names (tap to add)", suggShop: "Frequent buys (tap to add)",
     namePh: f => `${f} (e.g. milk)`, datePh: k => `${k} e.g. ${exDate()}`, datePhCook: k => `${k} e.g. ${exDate()} (blank = today)`,
-    autoMoveLabel: "Checking an item moves it to the fridge right away (since today)",
+    autoMoveLabel: "Move checked items to the fridge right away", autoCook: c => `${c} (today)`,
     autoMoved: (n, tf, z) => `‘${n}’ → ${tf} ${z} (since today) · `,
     badDate: () => { const e = exDate(); return `Please check the date. e.g. ${e} (YYMMDD = 20${e.slice(0, 2)}-${e.slice(2, 4)}-${e.slice(4)})`; }, badDateShort: () => `Please check the date. e.g. ${exDate()} (YYMMDD)`,
     maxItems: n => `Up to ${n} items. Please clear out what you've finished.`, maxShop: n => `Up to ${n} shopping items. Please clear out what you've bought.`,
@@ -496,7 +496,8 @@ function normalize(d) {
     const ok = v => typeof v === "string" && parseDate(v) === v;
     o.bin.push({ id: String(i.id || uid()), name: i.name.slice(0, 40), qty: qty(i.qty), zone: String(i.zone ?? ""), date: ok(i.date) ? i.date : "", kind: i.kind === "cook" ? "cook" : "exp", binAt: ok(i.binAt) ? i.binAt : "" });
   }
-  o.autoMove = typeof d.autoMove === "boolean" ? d.autoMove : null;   // 장보기: 체크하면 바로 냉장고로(냉장고마다 공유). null = 아직 안 정함
+  o.autoMove = typeof d.autoMove === "boolean" ? d.autoMove : null;
+  o.autoKind = d.autoKind === "exp" ? "exp" : "cook";   // 바로 담기: cook = 기준일 오늘로 바로, exp = 유통기한 입력 창   // 장보기: 체크하면 바로 냉장고로(냉장고마다 공유). null = 아직 안 정함
   o.theme = ["mint", "pink", "white", "purple", "blue"].includes(d.theme) ? d.theme : "white";   // 테마(냉장고마다 공유). 목록은 <head>의 SKINS 와 같게
   o.words = Object.create(null);   // 자동완성(이 냉장고에서 쓴 이름과 횟수). __proto__ 같은 이름도 안전하게
   Object.entries(d.words && typeof d.words === "object" ? d.words : {})
@@ -697,7 +698,7 @@ function download(name, text) {
 function applyLang() {   // 정적 화면 글자(대화상자 제목·버튼 등)를 지금 언어로
   document.documentElement.lang = LANG;
   $("gear").setAttribute("aria-label", t("settings"));
-  for (const [id, k] of [["eTitle", "edit"], ["eErase", "eraseItem"], ["eKindL", "dateKind"], ["eZoneL", "zone"], ["eCancel", "cancel"], ["eSave", "save"], ["mZoneL", "zone"], ["mCancel", "cancel"], ["mSave", "moveDo"], ["sTitle", "settings"], ["sClose", "close"], ["gTitle", "guideTitle"]]) $(id).textContent = t(k);
+  for (const [id, k] of [["eTitle", "edit"], ["eErase", "eraseItem"], ["eKindL", "dateKind"], ["eZoneL", "zone"], ["eClose", "close"], ["mZoneL", "zone"], ["mCancel", "cancel"], ["mSave", "moveDo"], ["sTitle", "settings"], ["sClose", "close"], ["gTitle", "guideTitle"]]) $(id).textContent = t(k);
   $("mTitle").textContent = t("moveTitle", L("tabFridge"));
   for (const id of ["eZone", "mZone"]) $(id).setAttribute("aria-label", t("zone"));
   $("eDate").placeholder = t("eDatePh");
@@ -846,7 +847,17 @@ function inFridgePill(name) {   // 장보기 항목이 이미 냉장고에 있�
 shopBar.msg = h("div", { className: "meta msg", role: "status" });
 function shopView() { renderShopList(); shopSugg(); return h("div", {}, shopBar.root, shopBar.sugg, shopBar.msg, shopBar.listBox); }
 let shopUndoTimer;
+const shopZones = h("div", { className: "segs", role: "group", style: "margin-top:6px" });   // 한 번만 만들어 재사용(크기 맞춤 관찰이 쌓이지 않게)
+shopZones.onchange = () => { zoneId = shopZones.value; savePref(); };
+function autoMoveOpts() {   // 바로 담기: 기준일(오늘) / 유통기한(입력 창) + 보낼 구역(마지막에 고른 구역과 같음)
+  const kinds = h("div", { className: "segs", role: "group", "aria-label": t("dateKind") }, [["cook", t("autoCook", L("fCook"))], ["exp", L("fDate")]].map(([k, label]) => h("button", {
+    type: "button", className: "seg" + (data.autoKind === k ? " on" : ""), "aria-pressed": String(data.autoKind === k), textContent: label,
+    onclick() { data.autoKind = k; save(); renderShopList(); } })));
+  fillZones(shopZones, zoneId);
+  return h("div", { style: "margin-bottom:10px" }, kinds, shopZones);
+}
 function autoMoveItem(s) {   // 장보기 → 냉장고(오늘 기준일, 마지막에 고른 구역). 잠깐 되돌리기
+  if (data.autoKind === "exp") return openMove([s]);   // 유통기한: 입력 창(취소하면 체크 해제)
   if (data.items.length >= MAX_ROWS) { s.done = false; renderShopList(); return alert(t("maxItems", MAX_ROWS)); }
   const at = data.shop.indexOf(s);
   const it = { id: uid(), name: s.name, qty: s.qty, zone: data.zones.some(z => z.id === zoneId) ? zoneId : data.zones[0].id, date: todayISO(), kind: "cook" };
@@ -860,7 +871,8 @@ function renderShopList() {
   const done = data.shop.filter(s => s.done);
   shopBar.listBox.replaceChildren(
     data.shop.length ? h("label", { className: "meta", style: "display:flex;align-items:center;gap:8px;min-height:44px;margin:0;cursor:pointer" },
-      h("input", { type: "checkbox", checked: autoMoveOn(), style: "width:20px;min-height:20px;flex:none", onchange() { data.autoMove = this.checked; save(); } }), t("autoMoveLabel")) : "",
+      h("input", { type: "checkbox", checked: autoMoveOn(), style: "width:20px;min-height:20px;flex:none", onchange() { data.autoMove = this.checked; save(); renderShopList(); } }), t("autoMoveLabel")) : "",
+    data.shop.length && autoMoveOn() ? autoMoveOpts() : "",
     data.shop.length ? h("div", { className: "card" }, data.shop.map(s => h("div", { className: "item", style: "cursor:default" },
       h("label", { style: "display:flex;align-items:center;justify-content:center;width:44px;min-height:44px;margin:0;flex:none" },
         h("input", { type: "checkbox", checked: s.done, "aria-label": s.name, style: "width:24px;min-height:24px", onchange() { s.done = this.checked; if (s.done && autoMoveOn()) return autoMoveItem(s); save(); const n = data.shop.indexOf(s); renderShopList(); shopBar.listBox.querySelectorAll("input[type=checkbox]")[n]?.focus(); } })),
@@ -870,7 +882,7 @@ function renderShopList() {
       h("input", { value: s.qty, "aria-label": `${s.name} ${L("fQty")}`, style: "width:72px;text-align:center", maxLength: 20, onfocus() { this.select(); reveal(this); }, oninput() { s.qty = qty(this.value); save(); }, onchange() { this.value = s.qty; } }),
       h("button", { className: "ghost x", textContent: "✕", "aria-label": t("delAria", s.name), style: "padding:8px 12px;min-width:44px", onclick() { data.shop = data.shop.filter(x => x !== s); save(); renderShopList(); } }))))
       : h("div", { className: "empty", textContent: t("shopEmpty", L("tabFridge")) }),
-    done.length ? h("button", { textContent: t("moveBtn", done.length, L("tabFridge")), style: "width:100%", onclick: openMove }) : "");
+    done.length ? h("button", { textContent: t("moveBtn", done.length, L("tabFridge")), style: "width:100%", onclick: () => openMove() }) : "");
 }
 
 // ---- 재료 수정 ----
@@ -878,19 +890,21 @@ function openEdit(it) {
   editing = it;
   $("eName").value = it.name; $("eDate").value = fmtDate(it.date); $("eDate").classList.remove("bad"); $("eErr").textContent = "";
   $("eKind").value = it.kind; $("eQty").value = it.qty; fillZones($("eZone"), it.zone);
-  openDlg($("eDlg")); $("eCancel").focus();   // 폰 키보드가 바로 뜨지 않게
+  openDlg($("eDlg")); $("eClose").focus();   // 폰 키보드가 바로 뜨지 않게
 }
 $("eDate").oninput = () => { $("eDate").classList.remove("bad"); $("eErr").textContent = ""; delete $("eDate").dataset.note; };
-$("eDate").onblur = () => tidyDate($("eDate"), $("eKind").value, m => { $("eErr").textContent = m; });
-$("eForm").onsubmit = e => {
-  e.preventDefault();
+$("eDate").onblur = () => { tidyDate($("eDate"), $("eKind").value, m => { $("eErr").textContent = m; }); applyEdit(); };
+// 저장 버튼 없음: 구역·날짜 종류를 누르거나 칸을 벗어나거나 창을 닫으면 바로 저장. 빈 이름·잘못된 날짜는 원래 값 유지
+function applyEdit() {
+  const it = editing;
+  if (!it || !data.items.includes(it)) return;   // 처리·삭제했거나 다른 기기 내용으로 바뀜
   const name = $("eName").value.trim(), date = parseDate($("eDate").value, $("eKind").value);
-  if (!name) return $("eName").focus();
-  if (date === null) { $("eDate").classList.add("bad"); $("eErr").textContent = t("badDateShort"); return $("eDate").focus(); }
-  Object.assign(editing, { name, date, kind: $("eKind").value, qty: qty($("eQty").value), zone: $("eZone").value });
-  save(); $("eDlg").close(); render();
-};
-$("eCancel").onclick = () => $("eDlg").close();
+  Object.assign(it, { name: name || it.name, kind: $("eKind").value, qty: qty($("eQty").value), zone: $("eZone").value }, date === null ? {} : { date });
+  save(); render();
+}
+$("eZone").onchange = $("eKind").onchange = $("eName").onchange = $("eQty").onchange = applyEdit;
+$("eForm").onsubmit = e => { e.preventDefault(); $("eDlg").close(); };
+$("eDlg").onclose = () => { applyEdit(); editing = null; };
 // ---- 처리(음쓰통으로) / 되돌리기 ----
 const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 function restoreItem(it) {   // 음쓰통 → 냉장고(구역이 지워졌으면 첫 구역)
@@ -931,9 +945,11 @@ function binSection() {   // 설정 안 음쓰통: 처리한 재료(최근 것�
 
 // ---- 장보기 → 냉장고 ----
 let moveRows = [];
-function openMove() {
+let moveAuto = null;   // 바로 담기(유통기한)로 연 항목: 창을 그냥 닫으면 체크를 푼다
+function openMove(list) {
+  moveAuto = list?.[0] ?? null;
   fillZones($("mZone"), zoneId);
-  moveRows = data.shop.filter(s => s.done).map(s => ({ s, date: h("input", { inputMode: "numeric", maxLength: 12, autocomplete: "off", placeholder: t("movePh", L("fDate")), "aria-label": s.name }) }));
+  moveRows = (list ?? data.shop.filter(s => s.done)).map(s => ({ s, date: h("input", { inputMode: "numeric", maxLength: 12, autocomplete: "off", placeholder: t("movePh", L("fDate")), "aria-label": s.name }) }));
   moveRows.forEach((r, i) => {
     r.date.oninput = () => { r.date.classList.remove("bad"); $("mErr").textContent = ""; delete r.date.dataset.note; };
     r.date.onfocus = () => reveal(r.date);
@@ -953,9 +969,11 @@ $("mForm").onsubmit = e => {
   zoneId = $("mZone").value; savePref();
   moveRows.forEach((r, i) => data.items.push({ id: uid(), name: r.s.name, qty: r.s.qty, zone: zoneId, date: dates[i], kind: "exp" }));
   const moved = new Set(moveRows.map(r => r.s)); data.shop = data.shop.filter(s => !moved.has(s));
-  save(); $("mDlg").close(); tab = "fridge"; render();
+  const stay = !!moveAuto; moveAuto = null;   // 바로 담기는 장보기 탭에 그대로
+  save(); $("mDlg").close(); if (!stay) tab = "fridge"; render();
 };
 $("mCancel").onclick = () => $("mDlg").close();
+$("mDlg").onclose = () => { if (moveAuto && data.shop.includes(moveAuto)) { moveAuto.done = false; save(); renderShopList(); } moveAuto = null; };
 
 // ---- 설정 ----
 let wordsOpen = false, binOpen = false;
@@ -1045,12 +1063,33 @@ function delZone(z) {
 $("gear").onclick = openSettings;
 $("sClose").onclick = () => $("sDlg").close();
 $("sDlg").onclose = () => { data.zones.forEach(z => { if (!z.name.trim()) z.name = t("zone"); }); save(); render(); };
+// 새 버전 자동 반영: GitHub Pages·폰 브라우저 캐시 때문에 앱을 다시 켜도 예전 화면이 남는다.
+// 열 때·화면으로 돌아올 때 서버의 index.html 을 캐시 없이 받아, 지금 화면의 <script>·<style> 내용과 다르면 새로고침.
+// 입력 중·창이 열림·서버 저장 대기 중이면 미뤘다가 30초마다 다시 시도. 같은 탭에서 1분 안에 두 번은 안 함(무한 새로고침 방지)
+// ponytail: 스크립트·스타일만 비교 — HTML 마크업만 바뀐 배포는 못 알아챔(그런 배포는 드묾)
+const codeSig = list => list.map(x => x.replace(/\r/g, "")).join("\0");
+let newVer = false, updAt = 0;
+async function checkUpdate() {
+  if (!newVer) {
+    if (location.protocol !== "https:" || Date.now() - updAt < 60000) return;
+    updAt = Date.now();
+    try {
+      const html = await (await fetch(location.href.split("#")[0], { cache: "reload" })).text();   // 받은 새 파일로 브라우저 캐시도 바뀜
+      const fresh = codeSig([...html.matchAll(/<(script|style)>([\s\S]*?)<\/\1>/g)].map(m => m[2]));
+      newVer = !!fresh && fresh !== codeSig([...document.querySelectorAll("script:not([src]), style")].map(e => e.textContent));
+    } catch { return; }
+  }
+  if (!newVer || dirty || busy || document.querySelector("dialog[open]") || [fb.name, fb.date, shopBar.name].some(i => i.value.trim())) return;
+  try { if (Date.now() - (+sessionStorage.getItem("fridgey.updAt") || 0) < 60000) return; sessionStorage.setItem("fridgey.updAt", Date.now()); } catch { return; }
+  location.reload();
+}
 document.onvisibilitychange = () => {
   if (document.hidden) return;
+  checkUpdate();
   if (day !== new Date().toDateString() && !document.querySelector("dialog[open]")) render();
   syncNow();
 };
-setInterval(() => { if (!document.hidden) syncNow(); }, 30000);
+setInterval(() => { if (!document.hidden) { syncNow(); if (newVer) checkUpdate(); } }, 30000);
 $("nav").onclick = e => { const t = e.target.closest("button")?.dataset.tab; if (t && t !== tab) { tab = t; history.pushState({ tab }, ""); render(); } };
 
 // ---- 폰 뒤로가기: 열린 창이 있으면 닫고, 없으면 이전 탭으로. 키 보관 창·시작 안내는 고르기 전엔 안 닫힘 ----
@@ -1084,6 +1123,7 @@ if (typeof window.HTMLDialogElement?.prototype.showModal !== "function" || !Elem
       if (s?.key) { await useKey(s.key, s.rev | 0); syncNow(); }
       else if (store.get("fridgey.noauto") !== "1") await autoRoom();   // 처음 켠 기기: 자동 백업 시작
     } catch {}
+    checkUpdate();
     await keyGate();   // 새 키면 먼저 보관하게(화면 전체)
     if (!guideHidden() && !document.querySelector("dialog[open]")) { render(); openGuide(false); }
   })();
