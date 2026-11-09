@@ -170,6 +170,7 @@ button.done{flex:none;padding:3px 10px;min-height:30px;font-size:13px;border-wid
   <form id="mForm">
     <h2 id="mTitle">냉장고에 넣기</h2>
     <label id="mZoneL">구역</label><div id="mZone" class="segs" role="group" aria-label="구역"></div>
+    <div id="mKind" class="segs hide" role="group" style="margin-top:12px"></div>
     <div id="mRows"></div><div class="err" id="mErr"></div>
     <div class="actions"><button type="button" class="ghost" id="mCancel">취소</button><button type="submit" id="mSave">넣기</button></div>
   </form>
@@ -496,8 +497,7 @@ function normalize(d) {
     const ok = v => typeof v === "string" && parseDate(v) === v;
     o.bin.push({ id: String(i.id || uid()), name: i.name.slice(0, 40), qty: qty(i.qty), zone: String(i.zone ?? ""), date: ok(i.date) ? i.date : "", kind: i.kind === "cook" ? "cook" : "exp", binAt: ok(i.binAt) ? i.binAt : "" });
   }
-  o.autoMove = typeof d.autoMove === "boolean" ? d.autoMove : null;
-  o.autoKind = d.autoKind === "exp" ? "exp" : "cook";   // 바로 담기: cook = 기준일 오늘로 바로, exp = 유통기한 입력 창   // 장보기: 체크하면 바로 냉장고로(냉장고마다 공유). null = 아직 안 정함
+  o.autoMove = typeof d.autoMove === "boolean" ? d.autoMove : null;   // 장보기: 체크하면 바로 냉장고로(냉장고마다 공유). null = 아직 안 정함
   o.theme = ["mint", "pink", "white", "purple", "blue"].includes(d.theme) ? d.theme : "white";   // 테마(냉장고마다 공유). 목록은 <head>의 SKINS 와 같게
   o.words = Object.create(null);   // 자동완성(이 냉장고에서 쓴 이름과 횟수). __proto__ 같은 이름도 안전하게
   Object.entries(d.words && typeof d.words === "object" ? d.words : {})
@@ -847,17 +847,8 @@ function inFridgePill(name) {   // 장보기 항목이 이미 냉장고에 있�
 shopBar.msg = h("div", { className: "meta msg", role: "status" });
 function shopView() { renderShopList(); shopSugg(); return h("div", {}, shopBar.root, shopBar.sugg, shopBar.msg, shopBar.listBox); }
 let shopUndoTimer;
-const shopZones = h("div", { className: "segs", role: "group", style: "margin-top:6px" });   // 한 번만 만들어 재사용(크기 맞춤 관찰이 쌓이지 않게)
-shopZones.onchange = () => { zoneId = shopZones.value; savePref(); };
-function autoMoveOpts() {   // 바로 담기: 기준일(오늘) / 유통기한(입력 창) + 보낼 구역(마지막에 고른 구역과 같음)
-  const kinds = h("div", { className: "segs", role: "group", "aria-label": t("dateKind") }, [["cook", t("autoCook", L("fCook"))], ["exp", L("fDate")]].map(([k, label]) => h("button", {
-    type: "button", className: "seg" + (data.autoKind === k ? " on" : ""), "aria-pressed": String(data.autoKind === k), textContent: label,
-    onclick() { data.autoKind = k; save(); renderShopList(); } })));
-  fillZones(shopZones, zoneId);
-  return h("div", { style: "margin-bottom:10px" }, kinds, shopZones);
-}
-function autoMoveItem(s) {   // 장보기 → 냉장고(오늘 기준일, 마지막에 고른 구역). 잠깐 되돌리기
-  if (data.autoKind === "exp") return openMove([s]);   // 유통기한: 입력 창(취소하면 체크 해제)
+const autoMoveItem = s => openMove([s]);   // 바로 담기: 체크하는 순간 창(구역 + 기준일(오늘)/유통기한)
+function moveToday(s) {   // 장보기 → 냉장고(오늘 기준일, 고른 구역). 잠깐 되돌리기
   if (data.items.length >= MAX_ROWS) { s.done = false; renderShopList(); return alert(t("maxItems", MAX_ROWS)); }
   const at = data.shop.indexOf(s);
   const it = { id: uid(), name: s.name, qty: s.qty, zone: data.zones.some(z => z.id === zoneId) ? zoneId : data.zones[0].id, date: todayISO(), kind: "cook" };
@@ -871,8 +862,7 @@ function renderShopList() {
   const done = data.shop.filter(s => s.done);
   shopBar.listBox.replaceChildren(
     data.shop.length ? h("label", { className: "meta", style: "display:flex;align-items:center;gap:8px;min-height:44px;margin:0;cursor:pointer" },
-      h("input", { type: "checkbox", checked: autoMoveOn(), style: "width:20px;min-height:20px;flex:none", onchange() { data.autoMove = this.checked; save(); renderShopList(); } }), t("autoMoveLabel")) : "",
-    data.shop.length && autoMoveOn() ? autoMoveOpts() : "",
+      h("input", { type: "checkbox", checked: autoMoveOn(), style: "width:20px;min-height:20px;flex:none", onchange() { data.autoMove = this.checked; save(); } }), t("autoMoveLabel")) : "",
     data.shop.length ? h("div", { className: "card" }, data.shop.map(s => h("div", { className: "item", style: "cursor:default" },
       h("label", { style: "display:flex;align-items:center;justify-content:center;width:44px;min-height:44px;margin:0;flex:none" },
         h("input", { type: "checkbox", checked: s.done, "aria-label": s.name, style: "width:24px;min-height:24px", onchange() { s.done = this.checked; if (s.done && autoMoveOn()) return autoMoveItem(s); save(); const n = data.shop.indexOf(s); renderShopList(); shopBar.listBox.querySelectorAll("input[type=checkbox]")[n]?.focus(); } })),
@@ -945,9 +935,16 @@ function binSection() {   // 설정 안 음쓰통: 처리한 재료(최근 것�
 
 // ---- 장보기 → 냉장고 ----
 let moveRows = [];
-let moveAuto = null;   // 바로 담기(유통기한)로 연 항목: 창을 그냥 닫으면 체크를 푼다
+let moveAuto = null;   // 바로 담기로 연 항목: 창을 그냥 닫으면 체크를 푼다
 function openMove(list) {
   moveAuto = list?.[0] ?? null;
+  for (const id of ["mRows", "mSave"]) $(id).classList.toggle("hide", !!moveAuto);   // 바로 담기는 유통기한을 눌러야 보임
+  $("mKind").classList.toggle("hide", !moveAuto);
+  if (moveAuto) $("mKind").replaceChildren(
+    h("button", { type: "button", className: "seg", textContent: t("autoCook", L("fCook")), onclick() {
+      const it = moveAuto; moveAuto = null; zoneId = $("mZone").value; savePref(); $("mDlg").close(); moveToday(it); } }),
+    h("button", { type: "button", className: "seg", textContent: L("fDate"), onclick() {
+      this.classList.add("on"); $("mRows").classList.remove("hide"); $("mSave").classList.remove("hide"); moveRows[0].date.focus(); } }));
   fillZones($("mZone"), zoneId);
   moveRows = (list ?? data.shop.filter(s => s.done)).map(s => ({ s, date: h("input", { inputMode: "numeric", maxLength: 12, autocomplete: "off", placeholder: t("movePh", L("fDate")), "aria-label": s.name }) }));
   moveRows.forEach((r, i) => {
@@ -959,7 +956,7 @@ function openMove(list) {
   $("mErr").textContent = "";
   $("mRows").replaceChildren(...moveRows.map(r => h("div", { style: "margin-top:10px" },
     h("div", { className: "name", textContent: r.s.name + (r.s.qty !== "1" ? ` ×${r.s.qty}` : "") }), r.date)));
-  openDlg($("mDlg")); moveRows[0]?.date.focus();
+  openDlg($("mDlg")); if (!moveAuto) moveRows[0]?.date.focus();
 }
 $("mForm").onsubmit = e => {
   e.preventDefault();
