@@ -158,7 +158,7 @@ button.done{flex:none;padding:3px 10px;min-height:30px;font-size:13px;border-wid
     <label for="eName" id="eNameL"></label><input id="eName" required maxlength="40" autocomplete="off">
     <label for="eDate" id="eDateL"></label><input id="eDate" inputmode="numeric" maxlength="12" autocomplete="off" placeholder=""><div class="err" id="eErr"></div>
     <label for="eKind" id="eKindL">날짜 종류</label><select id="eKind"></select>
-    <label for="eQty" id="eQtyL"></label><input id="eQty" maxlength="20" autocomplete="off">
+    <label for="eQty" id="eQtyL"></label><div class="row"><input id="eQty" maxlength="20" autocomplete="off" style="flex:1;min-width:0"><button type="button" class="ghost" id="eQtyDn" style="min-width:48px">▼</button><button type="button" class="ghost" id="eQtyUp" style="min-width:48px">▲</button></div>
     <label id="eZoneL">구역</label><div id="eZone" class="segs" role="group" aria-label="구역"></div>
     <div class="actions stick"><button type="submit" id="eClose">닫기</button></div>
     <div class="actions"><button type="button" class="ghost" id="eDel">처리</button><button type="button" class="danger" id="eErase">삭제</button></div>
@@ -316,6 +316,11 @@ function parseKeyFile(text) {
   if (n !== 32) throw new Error("키 형식이 올바르지 않습니다");
   return o.key;
 }
+// 수량 ▲▼: 앞의 숫자만 1씩(1~999), 뒤 글자는 유지("2봉지" → "3봉지"). 숫자가 없으면 1로 보고 셈
+function stepQty(v, d) {
+  const m = /^(\d+)(.*)$/s.exec(String(v ?? "").trim());
+  return (Math.min(999, Math.max(1, (m ? +m[1] : 1) + d)) + (m ? m[2] : "")).slice(0, 20);
+}
 // </core>
 
 // ---- 데이터 ----
@@ -348,7 +353,7 @@ const T = {
     gate1: "이 냉장고는 자동으로 암호화돼서 서버에 백업돼요. 여는 열쇠는 '키 파일' 하나뿐이에요.",
     gate2a: "쿠키·사이트 데이터를 지우거나 폰을 바꾸면 ", gate2b: "이 키 파일로만 되살릴 수 있고, 잃어버리면 아무도 복구할 수 없어요.",
     gate3: "카톡 '나에게 보내기'로 보내 두면 가장 편해요. 함께 쓸 사람에게도 이 파일을 보내 주세요.",
-    saveKey: "키 파일 보관하기", gateRetry: "보관이 끝나야 다음으로 넘어가요. 다시 눌러 주세요.", haveKey: "이미 받은 키 파일이 있어요 (참여하기)",
+    saveKey: "키 파일 보관하기", keyName: "키 파일 이름 (바꿔도 돼요)", gateRetry: "보관이 끝나야 다음으로 넘어가요. 다시 눌러 주세요.", haveKey: "이미 받은 키 파일이 있어요 (참여하기)",
     guideNever: "시작할 때 사용법 안내: 다시 보지 않음", guideUntil: (m, d) => `시작할 때 사용법 안내: ${m}월 ${d}일까지 숨김`, guideOn: "시작할 때 사용법 안내: 보임",
     g1: (f, a) => `① ${f}을(를) 쓰고 날짜(예: ${exDate()})를 넣은 뒤 ${a}. 글자를 치면 자주 쓴 이름이 떠서 누르면 바로 들어가요.`,
     g2: "② 이 냉장고는 자동으로 암호화돼서 서버에 백업돼요. 여는 열쇠는 '키 파일' 하나뿐이라 서버 주인도 내용을 못 봐요.",
@@ -415,7 +420,7 @@ const T = {
     gate1: "This fridge is encrypted and backed up to the server automatically. The only key that opens it is your key file.",
     gate2a: "If you clear cookies/site data or change phones, ", gate2b: "only this key file can bring it back. If you lose it, no one can recover it.",
     gate3: "Sending it to yourself in a messenger is the easiest. Send the file to anyone you share the fridge with, too.",
-    saveKey: "Save key file", gateRetry: "Please save it to continue. Tap again.", haveKey: "I already have a key file (join)",
+    saveKey: "Save key file", keyName: "Key file name (you can change it)", gateRetry: "Please save it to continue. Tap again.", haveKey: "I already have a key file (join)",
     guideNever: "Guide at start: never show", guideUntil: (m, d) => `Guide at start: hidden until ${m}/${d}`, guideOn: "Guide at start: shown",
     g1: (f, a) => `① Type a ${f} and a date (e.g. ${exDate()} = YYMMDD), then tap ${a}. As you type, names you often use pop up; tap one to add it right away.`,
     g2: "② This fridge is encrypted and backed up to the server automatically. The only key is your key file, so even the server owner can't read it.",
@@ -601,8 +606,11 @@ function leaveRoom() { sync = null; synced = ""; dirty = false; clearTimeout(pus
 async function autoRoom() {   // 처음 켠 기기: 키를 자동으로 만들어 서버 백업을 시작(오프라인이면 연결될 때 올라간다)
   await useKey(newKey(), 0); dirty = true; saveSync(); syncNow();
 }
-async function shareKey() {   // 키 파일 보관: 공유 창(카톡 나에게 보내기 등)이 되면 그걸로, 안 되면 파일 저장. 보관했으면 true(공유 창에서 취소하면 false)
-  const text = keyFileText(sync.key), name = "fridgey-key.json";
+const keyDefaultName = () => "fridgey-key-" + String(crypto.getRandomValues(new Uint16Array(1))[0] % 10000).padStart(4, "0");   // 기본 이름 + 무작위 4자리
+// 파일 이름으로 못 쓰는 글자(\ / : * ? " < > |)는 빼고 40자까지, 끝에 .json. 비면 기본 이름
+const keyFileName = v => (String(v ?? "").trim().replace(/\.json$/i, "").replace(/[\\/:*?"<>|\x00-\x1f]/g, "").trim().slice(0, 40) || keyDefaultName()) + ".json";
+async function shareKey(fileName) {   // 키 파일 보관: 공유 창(카톡 나에게 보내기 등)이 되면 그걸로, 안 되면 파일 저장. 보관했으면 true(공유 창에서 취소하면 false)
+  const text = keyFileText(sync.key), name = keyFileName(fileName);
   let done = false;
   try {
     const f = new File([text], name, { type: "application/json" });
@@ -618,6 +626,7 @@ function keyGate() {
   return new Promise(resolve => {
     const file = h("input", { type: "file", accept: ".json,application/json", className: "hide" });
     const msg = h("p", { className: "err", role: "alert" });
+    const nameIn = h("input", { id: "kName", value: keyDefaultName(), maxLength: 45, autocomplete: "off", enterKeyHint: "done", onfocus() { this.select(); } });
     const finish = () => { if ($("kDlg").open) $("kDlg").close(); render(); resolve(); };
     file.onchange = async () => {
       try { await joinRoom(await file.files[0].text()); } finally { file.value = ""; }
@@ -628,9 +637,10 @@ function keyGate() {
       h("p", { textContent: t("gate1") }),
       h("p", {}, t("gate2a"), h("strong", { textContent: t("gate2b") })),
       h("p", { textContent: t("gate3") }),
+      h("label", { htmlFor: "kName", textContent: t("keyName") }), nameIn,
       msg,
       h("button", { className: "big", textContent: t("saveKey"), async onclick() {
-        if (await shareKey()) finish(); else msg.textContent = t("gateRetry");
+        if (await shareKey(nameIn.value)) finish(); else msg.textContent = t("gateRetry");
       } }),
       h("button", { className: "ghost", textContent: t("haveKey"), onclick: () => file.click() }), file);
     $("kDlg").onclose = () => { if (store.get("fridgey.keysaved") !== sync?.id) setTimeout(() => openDlg($("kDlg")), 0); };   // 폰 뒤로가기가 창을 직접 닫아도 보관 전이면 다시 연다
@@ -711,7 +721,7 @@ function applyLabels() {
   $("eDel").textContent = L("doneBtn");
   for (const b of $("nav").children) { b.classList.toggle("on", b.dataset.tab === tab); b.dataset.tab === tab ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"); }
   refreshFridgeBar();
-  $("eNameL").textContent = L("fName"); $("eDateL").textContent = L("fDate") + " / " + L("fCook"); $("eQtyL").textContent = L("fQty");
+  $("eNameL").textContent = L("fName"); $("eDateL").textContent = L("fDate") + " / " + L("fCook"); $("eQtyL").textContent = L("fQty"); $("eQtyUp").setAttribute("aria-label", `${L("fQty")} +1`); $("eQtyDn").setAttribute("aria-label", `${L("fQty")} -1`);
   $("eKind").replaceChildren(h("option", { value: "exp", textContent: L("fDate") }), h("option", { value: "cook", textContent: L("fCook") }));
   shopBar.add.textContent = L("addBtn"); shopBar.name.placeholder = L("fName"); shopBar.qty.placeholder = L("fQty");
   shopBar.name.setAttribute("aria-label", L("fName")); shopBar.qty.setAttribute("aria-label", L("fQty"));
@@ -894,6 +904,7 @@ function applyEdit() {
 }
 $("eZone").onchange = $("eKind").onchange = $("eName").onchange = $("eQty").onchange = applyEdit;
 $("eForm").onsubmit = e => { e.preventDefault(); $("eDlg").close(); };
+for (const [id, d] of [["eQtyUp", 1], ["eQtyDn", -1]]) $(id).onclick = () => { $("eQty").value = stepQty($("eQty").value, d); applyEdit(); };
 $("eDlg").onclose = () => { applyEdit(); editing = null; };
 // ---- 처리(음쓰통으로) / 되돌리기 ----
 const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
