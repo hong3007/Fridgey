@@ -1,11 +1,11 @@
-# Fridgey
+# Frizy
 
 **한국어** | [English](README.en.md)
 
 냉장고 재료와 유통기한을 **급한 순서대로** 보여 주고, 장보기 목록까지 한 곳에서 관리하는 무료 웹앱입니다.
 설치도 회원가입도 없이 링크만 열면 되고, 함께 사는 사람과 **같은 냉장고를 같이** 볼 수 있습니다.
 
-### 👉 [지금 열기: hong3007.github.io/Fridgey](https://hong3007.github.io/Fridgey/)
+### 👉 [지금 열기: hong3007.github.io/Frizy](https://hong3007.github.io/Frizy/)
 
 <!-- 스크린샷 자리: 폰에서 찍어 이 아래에 올려 주세요. 예) ![냉장고 화면](docs/screen-fridge.png) -->
 

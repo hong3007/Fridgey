@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme:light)">
 <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme:dark)">
-<title>Fridgey</title>
+<title>Frizy</title>
 <link rel="manifest" href="manifest.json">   <!-- 크롬 "앱 설치" 버튼용(manifest.json·icon-192/512.png 같이 배포) -->
 <script>
 // 테마는 화면이 그려지기 전에 적용한다(기본 테마가 잠깐 보였다가 바뀌지 않게). data.theme 과 같은 값을 fridgey.skin 에 따로 둔다.
@@ -188,7 +188,7 @@ button.done{flex:none;padding:3px 10px;min-height:30px;font-size:13px;border-wid
 
 <!-- 사용법 안내 (시작할 때 / 설정 → 설명 보기) -->
 <dialog id="gDlg" aria-labelledby="gTitle">
-  <h2 id="gTitle">Fridgey 사용법</h2>
+  <h2 id="gTitle">Frizy 사용법</h2>
   <div id="gBody"></div>
   <div class="actions stick" id="gActs"></div>
 </dialog>
@@ -308,10 +308,11 @@ async function decrypt(aes, str) {   // 키가 틀리거나 내용이 바뀌었�
   const b = b64uToBytes(str);
   return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: "AES-GCM", iv: b.slice(0, 12) }, aes, b.slice(12))));
 }
+// 앱 이름은 Frizy로 바뀌었지만(2026-11-28) 키 파일의 app:"fridgey", 암호 파생 이름 fridgey/…, 저장값 fridgey.* 는 그대로 둔다(바꾸면 기존 키·데이터가 안 맞음)
 const keyFileText = key => JSON.stringify({ app: "fridgey", v: 1, key }, null, 2);
 function parseKeyFile(text) {
   let o; try { o = JSON.parse(text); } catch { throw new Error("키 파일이 아닙니다"); }
-  if (!o || o.app !== "fridgey" || o.v !== 1 || typeof o.key !== "string") throw new Error("Fridgey 키 파일이 아닙니다");
+  if (!o || o.app !== "fridgey" || o.v !== 1 || typeof o.key !== "string") throw new Error("Frizy 키 파일이 아닙니다");
   let n = 0; try { n = b64uToBytes(o.key).length; } catch {}
   if (n !== 32) throw new Error("키 형식이 올바르지 않습니다");
   return o.key;
@@ -328,8 +329,8 @@ function stepQty(v, d) {
 // ---- 언어: 기기마다 따로(공유 안 함). 처음엔 폰 언어(한국어면 ko, 아니면 en) ----
 let LANG = (() => { try { const v = localStorage.getItem("fridgey.lang"); if (v === "ko" || v === "en") return v; } catch {} return /^ko/i.test(globalThis.navigator?.language || "") ? "ko" : "en"; })();
 const DEF = {   // 기본 이름(사용자가 설정에서 바꾼 이름이 있으면 그게 우선)
-  ko: { title: "Fridgey", tabFridge: "냉장고", tabShop: "장보기", fName: "음식명", fDate: "유통기한", fCook: "기준일", fQty: "수량", addBtn: "추가", tabBin: "음쓰통", doneBtn: "처리" },
-  en: { title: "Fridgey", tabFridge: "Fridge", tabShop: "Shopping", fName: "Food", fDate: "Expires", fCook: "Since", fQty: "Qty", addBtn: "Add", tabBin: "Bin", doneBtn: "Done" },
+  ko: { title: "Frizy", tabFridge: "냉장고", tabShop: "장보기", fName: "음식명", fDate: "유통기한", fCook: "기준일", fQty: "수량", addBtn: "추가", tabBin: "음쓰통", doneBtn: "처리" },
+  en: { title: "Frizy", tabFridge: "Fridge", tabShop: "Shopping", fName: "Food", fDate: "Expires", fCook: "Since", fQty: "Qty", addBtn: "Add", tabBin: "Bin", doneBtn: "Done" },
 };
 const DEFAULT_LABELS = DEF.ko;   // 이름 칸 목록(normalize 용)
 const exDate = () => { const d = new Date(), p = n => String(n).padStart(2, "0"); return String(d.getFullYear()).slice(2) + p(d.getMonth() + 1) + p(d.getDate()); };   // 날짜 예시 = 오늘(YYMMDD)
@@ -339,16 +340,16 @@ const T = {
     zones: ["1층", "2층", "3층"], zoneNew: n => `${n}층`, zone: "구역",
     skinNames: { mint: "민트", pink: "핑크", white: "화이트", purple: "퍼플", blue: "블루" },
     settings: "설정", edit: "수정", dateKind: "날짜 종류", cancel: "취소", save: "저장", close: "닫기",
-    moveTitle: tf => `${tf}에 넣기`, moveDo: "넣기", guideTitle: "Fridgey 사용법", eDatePh: () => `예: ${exDate()}`,
+    moveTitle: tf => `${tf}에 넣기`, moveDo: "넣기", guideTitle: "Frizy 사용법", eDatePh: () => `예: ${exDate()}`,
     corrupt: "저장된 데이터를 읽지 못해 새로 시작했어요. 원본은 이 기기에 따로 남겨 뒀어요.",
     resetData: "저장된 데이터에 문제가 있어 새로 시작했어요.",
     saveFail: "이 기기에 저장하지 못했어요. 설정에서 데이터를 내보내 백업해 두세요.",
     conflict: "다른 기기에서 먼저 바뀌어서 최신 내용으로 불러왔어요. 방금 한 변경이 안 보이면 다시 입력해 주세요.",
     synced: tm => `동기화됨 ${tm}`, offline: "연결되지 않아요. 연결되면 다시 맞춰요.",
     noServer: "서버에 연결하지 못했어요. 잠시 뒤 다시 해 주세요.", noRoom: "이 키로 저장된 냉장고를 찾지 못했어요.",
-    badKeyFile: "Fridgey 키 파일이 아니에요.", wrongKey: "키가 맞지 않거나 데이터를 읽을 수 없어요.",
+    badKeyFile: "Frizy 키 파일이 아니에요.", wrongKey: "키가 맞지 않거나 데이터를 읽을 수 없어요.",
     joinConfirm: (i, s) => `이 기기의 데이터를 공유 냉장고(재료 ${i}개, 장보기 ${s}개)로 바꿔요. 계속할까요?`,
-    shareTitle: "Fridgey 키 파일",
+    shareTitle: "Frizy 키 파일",
     gateTitle: "냉장고 열쇠를 꼭 보관하세요",
     gate1: "이 냉장고는 자동으로 암호화돼서 서버에 백업돼요. 여는 열쇠는 '키 파일' 하나뿐이에요.",
     gate2a: "쿠키·사이트 데이터를 지우거나 폰을 바꾸면 ", gate2b: "이 키 파일로만 되살릴 수 있고, 잃어버리면 아무도 복구할 수 없어요.",
@@ -377,7 +378,7 @@ const T = {
     binDate: (m, d, done) => `${m}/${d} ${done}`, restore: "되돌리기", restoreAria: n => `${n} 되돌리기`,
     erase: "지우기", eraseAria: n => `${n} 완전히 지우기`, eraseConfirm: n => `‘${n}’을(를) 완전히 지울까요? 되돌릴 수 없어요.`,
     binEmpty: (tf, d) => `아직 비어 있어요. ${tf}에서 ${d}을 누르면 여기로 와요.`,
-    badFile: "이 파일은 Fridgey에서 내보낸 데이터가 아닌 것 같아요. '데이터 내보내기'로 저장한 .json 파일을 골라 주세요.",
+    badFile: "이 파일은 Frizy에서 내보낸 데이터가 아닌 것 같아요. '데이터 내보내기'로 저장한 .json 파일을 골라 주세요.",
     importConfirm: (i, s) => `지금 데이터를 파일 내용으로 바꿔요. (재료 ${i}개, 장보기 ${s}개) 계속할까요?`,
     hZones: "구역 (층)", zoneNameAria: "구역 이름", zoneDelAria: n => `${n} 구역 삭제`, addZone: "＋ 구역 추가",
     hLang: "언어 (이 기기만)", hTheme: "테마 (함께 쓰는 사람과 공유돼요)", themeAria: "테마",
@@ -406,16 +407,16 @@ const T = {
     zones: ["Shelf 1", "Shelf 2", "Shelf 3"], zoneNew: n => `Shelf ${n}`, zone: "Section",
     skinNames: { mint: "Mint", pink: "Pink", white: "White", purple: "Purple", blue: "Blue" },
     settings: "Settings", edit: "Edit", dateKind: "Date type", cancel: "Cancel", save: "Save", close: "Close",
-    moveTitle: tf => `Move to ${tf}`, moveDo: "Move", guideTitle: "How to use Fridgey", eDatePh: () => `e.g. ${exDate()}`,
+    moveTitle: tf => `Move to ${tf}`, moveDo: "Move", guideTitle: "How to use Frizy", eDatePh: () => `e.g. ${exDate()}`,
     corrupt: "Couldn't read the saved data, so the app started fresh. The original was kept on this device.",
     resetData: "Saved data had a problem, so the app started fresh.",
     saveFail: "Couldn't save on this device. Export your data from Settings as a backup.",
     conflict: "This fridge was changed on another device first, so the latest version was loaded. If your last change is missing, please enter it again.",
     synced: tm => `Synced ${tm}`, offline: "Offline. It will sync when you're back online.",
     noServer: "Couldn't reach the server. Please try again shortly.", noRoom: "No fridge was found for this key.",
-    badKeyFile: "This is not a Fridgey key file.", wrongKey: "Wrong key, or the data couldn't be read.",
+    badKeyFile: "This is not a Frizy key file.", wrongKey: "Wrong key, or the data couldn't be read.",
     joinConfirm: (i, s) => `This device's data will be replaced with the shared fridge (${i} items, ${s} shopping). Continue?`,
-    shareTitle: "Fridgey key file",
+    shareTitle: "Frizy key file",
     gateTitle: "Keep your fridge key safe",
     gate1: "This fridge is encrypted and backed up to the server automatically. The only key that opens it is your key file.",
     gate2a: "If you clear cookies/site data or change phones, ", gate2b: "only this key file can bring it back. If you lose it, no one can recover it.",
@@ -444,7 +445,7 @@ const T = {
     binDate: (m, d, done) => `${done} ${m}/${d}`, restore: "Restore", restoreAria: n => `Restore ${n}`,
     erase: "Delete", eraseAria: n => `Delete ${n} permanently`, eraseConfirm: n => `Delete ‘${n}’ permanently? This can't be undone.`,
     binEmpty: (tf, d) => `Empty for now. Tap ${d} in the ${tf} to send items here.`,
-    badFile: "This doesn't look like data exported from Fridgey. Please choose a .json file saved with 'Export data'.",
+    badFile: "This doesn't look like data exported from Frizy. Please choose a .json file saved with 'Export data'.",
     importConfirm: (i, s) => `Replace the current data with this file? (${i} items, ${s} shopping)`,
     hZones: "Sections (shelves)", zoneNameAria: "Section name", zoneDelAria: n => `Delete section ${n}`, addZone: "＋ Add section",
     hLang: "Language (this device only)", hTheme: "Theme (shared with everyone using this fridge)", themeAria: "Theme",
@@ -606,7 +607,7 @@ function leaveRoom() { sync = null; synced = ""; dirty = false; clearTimeout(pus
 async function autoRoom() {   // 처음 켠 기기: 키를 자동으로 만들어 서버 백업을 시작(오프라인이면 연결될 때 올라간다)
   await useKey(newKey(), 0); dirty = true; saveSync(); syncNow();
 }
-const keyDefaultName = () => "fridgey-key-" + String(crypto.getRandomValues(new Uint16Array(1))[0] % 10000).padStart(4, "0");   // 기본 이름 + 무작위 4자리
+const keyDefaultName = () => "frizy-key-" + String(crypto.getRandomValues(new Uint16Array(1))[0] % 10000).padStart(4, "0");   // 기본 이름 + 무작위 4자리
 // 파일 이름으로 못 쓰는 글자(\ / : * ? " < > |)는 빼고 40자까지, 끝에 .json. 비면 기본 이름
 const keyFileName = v => (String(v ?? "").trim().replace(/\.json$/i, "").replace(/[\\/:*?"<>|\x00-\x1f]/g, "").trim().slice(0, 40) || keyDefaultName()) + ".json";
 async function shareKey(fileName) {   // 키 파일 보관: 공유 창(카톡 나에게 보내기 등)이 되면 그걸로, 안 되면 파일 저장. 보관했으면 true(공유 창에서 취소하면 false)
@@ -1034,7 +1035,7 @@ function renderSettings() {
       h("div", { textContent: t("data2") }),
       h("div", { textContent: t("data3") }),
       h("div", { textContent: t("homeScreen"), style: "margin-top:8px" })),
-    h("button", { className: "ghost", textContent: t("export"), style: "width:100%", onclick: () => download("fridgey-data.json", JSON.stringify(data, null, 2)) }),
+    h("button", { className: "ghost", textContent: t("export"), style: "width:100%", onclick: () => download("frizy-data.json", JSON.stringify(data, null, 2)) }),
     h("button", { className: "ghost", textContent: t("import"), style: "width:100%;margin-top:8px", onclick: () => file.click() }), file,
     h("button", { className: "danger", textContent: t("resetAll"), style: "width:100%;margin-top:8px", onclick() { if (confirm(t("resetConfirm"))) resetDevice(); } }),
     h("h3", { textContent: t("hHelp") }),

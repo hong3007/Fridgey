@@ -1,11 +1,11 @@
-# Fridgey
+# Frizy
 
 [한국어](README.md) | **English**
 
 A free web app that lists what's in your fridge **by how soon it expires**, with a shopping list in the same place.
 No install, no sign-up: just open the link. You can also share **the same fridge** with the people you live with.
 
-### 👉 [Open it now: hong3007.github.io/Fridgey](https://hong3007.github.io/Fridgey/)
+### 👉 [Open it now: hong3007.github.io/Frizy](https://hong3007.github.io/Frizy/)
 
 <!-- Screenshot slot: add phone screenshots below, e.g. ![Fridge screen](docs/screen-fridge.png) -->
 
